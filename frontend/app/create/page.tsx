@@ -2,19 +2,19 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { CalendarIcon, Clock, Upload } from "lucide-react"
+import { CalendarIcon, Clock } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { createEventWithPDF, EventData } from "@/lib/api/eventService"
+import { createEvent, EventData } from "@/lib/api/eventService"
 
 export default function CreateEventPage() {
   const router = useRouter()
@@ -23,9 +23,7 @@ export default function CreateEventPage() {
   const [minutes, setMinutes] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [fileName, setFileName] = useState<string>('')
+  // Removed PDF-related state variables
 
   // Form field states
   const [eventName, setEventName] = useState<string>('')
@@ -35,13 +33,7 @@ export default function CreateEventPage() {
   const [eventDescription, setEventDescription] = useState<string>('')
   const [eventFaqs, setEventFaqs] = useState<string>('')
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setSelectedFile(file)
-      setFileName(file.name)
-    }
-  }
+  // Removed PDF file handling function
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -49,14 +41,30 @@ export default function CreateEventPage() {
     setError('')
 
     try {
-      // Create form data manually
-      const formData = new FormData()
-      formData.append('eventName', eventName)
-      formData.append('organizerName', organizerName)
-      formData.append('organizerEmail', organizerEmail)
-      formData.append('organizerPhone', organizerPhone)
-      formData.append('eventDescription', eventDescription)
-      formData.append('eventFaqs', eventFaqs)
+      // Validate required fields
+      if (!eventName) {
+        setError('Event name is required')
+        setIsLoading(false)
+        return
+      }
+
+      if (!organizerName) {
+        setError('Organizer name is required')
+        setIsLoading(false)
+        return
+      }
+
+      if (!eventDescription) {
+        setError('Event description is required')
+        setIsLoading(false)
+        return
+      }
+
+      if (!organizerPhone) {
+        setError('Contact number is required')
+        setIsLoading(false)
+        return
+      }
 
       // Format date and time
       let timeString = ''
@@ -65,35 +73,52 @@ export default function CreateEventPage() {
         if (hours && minutes) {
           timeString += ` at ${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`
         }
+      } else {
+        // If no date is selected, use a default date format
+        timeString = 'Date to be announced'
       }
+
+      // Combine description and FAQs for the context
+      const fullContext = `${eventDescription}\n\n${eventFaqs ? 'FAQs:\n' + eventFaqs : ''}`
+
+      console.log('Creating event with data:', {
+        name: eventName,
+        organizer: organizerName,
+        time: timeString,
+        phone: organizerPhone
+      })
 
       const eventData: EventData = {
         name: eventName,
         organizer: organizerName,
-        details: eventDescription,
+        details: fullContext,
         time: timeString,
         whatsappNumber: organizerPhone.replace(/\D/g, ''), // Remove non-digits
       }
 
-      if (selectedFile) {
-        eventData.pdf = selectedFile
-      }
-
-      const response = await createEventWithPDF(eventData)
+      // Try to create the event
+      const response = await createEvent(eventData)
 
       if (response.success) {
+        console.log('Event created successfully:', response)
         // Store the chat link in localStorage to use on success page
         if (typeof window !== 'undefined') {
           localStorage.setItem('chatLink', response.link)
           localStorage.setItem('eventName', eventName)
+
+          // Also store the full event data for the chat page to use
+          if (response.event) {
+            localStorage.setItem('eventData', JSON.stringify(response.event))
+          }
         }
         router.push('/success')
       } else {
+        console.error('Failed to create event:', response.error)
         setError(response.error || 'Failed to create event')
       }
     } catch (err) {
       console.error('Error creating event:', err)
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -215,51 +240,29 @@ export default function CreateEventPage() {
                 <Label htmlFor="eventDescription">Event Description</Label>
                 <Textarea
                   id="eventDescription"
-                  placeholder="Describe your event..."
-                  className="min-h-[100px]"
+                  placeholder="Describe your event in detail..."
+                  className="min-h-[150px]"
                   required
                   value={eventDescription}
                   onChange={(e) => setEventDescription(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Include all important details about your event such as venue, schedule, speakers, etc.
+                  This information will be used by the AI to answer attendee questions.
+                </p>
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="eventFaqs">FAQs / Extra Info</Label>
+                <Label htmlFor="eventFaqs">FAQs / Additional Information</Label>
                 <Textarea
                   id="eventFaqs"
-                  placeholder="Additional information, FAQs, etc."
-                  className="min-h-[100px]"
+                  placeholder="Add frequently asked questions and answers, or any additional information..."
+                  className="min-h-[150px]"
                   value={eventFaqs}
                   onChange={(e) => setEventFaqs(e.target.value)}
                 />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="pdfUpload">Upload PDF (Optional)</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="file"
-                    id="pdfUpload"
-                    accept=".pdf"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Choose PDF
-                  </Button>
-                  <span className="text-sm text-muted-foreground truncate max-w-[200px]">
-                    {fileName || "No file chosen"}
-                  </span>
-                </div>
                 <p className="text-xs text-muted-foreground">
-                  Upload a PDF with detailed event information. This will be used to answer attendee questions.
+                  Add any FAQs, rules, guidelines, or other information that attendees might ask about.
                 </p>
               </div>
 

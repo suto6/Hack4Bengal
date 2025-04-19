@@ -32,36 +32,61 @@ export default function EventChatPage() {
     const fetchEvent = async () => {
       try {
         setLoading(true)
-        const eventData = await getEventById(eventId)
-        setEvent(eventData)
 
-        // Add welcome messages
-        setMessages([
-          {
-            id: "welcome-1",
-            content: `👋 Welcome to the ${eventData.name} event chat!`,
-            sender: "bot",
-            timestamp: new Date()
-          },
-          {
-            id: "welcome-2",
-            content: `I'm your AI event assistant. I can answer questions about dates, times, location, agenda, speakers, and more - all based on the information provided by the organizer.`,
-            sender: "bot",
-            timestamp: new Date(new Date().getTime() + 500)
-          },
-          {
-            id: "welcome-3",
-            content: `Try asking questions like:\n• When does the event start?\n• Where is the venue located?\n• What's on the agenda?\n• Who are the speakers?`,
-            sender: "bot",
-            timestamp: new Date(new Date().getTime() + 1000)
+        // First try to get the event from the backend
+        try {
+          const eventData = await getEventById(eventId)
+          setEvent(eventData)
+          addWelcomeMessages(eventData.name)
+          return
+        } catch (backendError) {
+          console.log('Could not fetch from backend, trying localStorage:', backendError)
+        }
+
+        // If backend fails, try to get from localStorage
+        if (typeof window !== 'undefined') {
+          const storedEventData = localStorage.getItem('eventData')
+          if (storedEventData) {
+            const parsedEventData = JSON.parse(storedEventData)
+            if (parsedEventData.id === eventId) {
+              setEvent(parsedEventData)
+              addWelcomeMessages(parsedEventData.name)
+              return
+            }
           }
-        ])
+        }
+
+        // If we get here, we couldn't find the event
+        throw new Error('Event not found')
       } catch (err) {
         console.error("Error fetching event:", err)
         setError("Event not found or could not be loaded")
       } finally {
         setLoading(false)
       }
+    }
+
+    const addWelcomeMessages = (eventName: string) => {
+      setMessages([
+        {
+          id: "welcome-1",
+          content: `👋 Welcome to the ${eventName} event chat!`,
+          sender: "bot",
+          timestamp: new Date()
+        },
+        {
+          id: "welcome-2",
+          content: `I'm your AI event assistant. I can answer questions about dates, times, location, agenda, speakers, and more - all based on the information provided by the organizer.`,
+          sender: "bot",
+          timestamp: new Date(new Date().getTime() + 500)
+        },
+        {
+          id: "welcome-3",
+          content: `Try asking questions like:\n• When does the event start?\n• Where is the venue located?\n• What's on the agenda?\n• Who are the speakers?`,
+          sender: "bot",
+          timestamp: new Date(new Date().getTime() + 1000)
+        }
+      ])
     }
 
     if (eventId) {
@@ -90,41 +115,64 @@ export default function EventChatPage() {
     setInputMessage("")
     setSending(true)
 
+    // Add typing indicator first
+    const typingIndicatorId = `typing-${Date.now()}`;
+    const typingIndicator: Message = {
+      id: typingIndicatorId,
+      content: "typing", // Special content to trigger typing indicator
+      sender: "bot",
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, typingIndicator]);
+
     try {
-      // Call API to get response from LLM
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          eventId,
-          message: inputMessage
+      let responseText = "";
+
+      // Try to call API to get response from LLM
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            eventId,
+            message: inputMessage
+          })
         })
-      })
 
-      if (!response.ok) {
-        throw new Error("Failed to get response")
+        if (!response.ok) {
+          throw new Error("Failed to get response")
+        }
+
+        const data = await response.json()
+        responseText = data.response;
+      } catch (apiError) {
+        console.error("API error, using fallback response:", apiError);
+
+        // If API fails, generate a simple response based on the event data
+        if (event) {
+          const question = inputMessage.toLowerCase();
+          if (question.includes('when') || question.includes('time') || question.includes('date')) {
+            responseText = `The event is scheduled for ${event.time}.`;
+          } else if (question.includes('where') || question.includes('location') || question.includes('venue')) {
+            responseText = `Please check the event details for location information: ${event.details.substring(0, 100)}...`;
+          } else if (question.includes('who') || question.includes('organizer')) {
+            responseText = `This event is organized by ${event.organizer}.`;
+          } else {
+            responseText = `Thank you for your question. Here's what I know about the event: ${event.details.substring(0, 150)}...`;
+          }
+        } else {
+          responseText = "I'm sorry, I don't have enough information to answer that question.";
+        }
       }
-
-      const data = await response.json()
-
-      // Add typing indicator first
-      const typingIndicatorId = `typing-${Date.now()}`;
-      const typingIndicator: Message = {
-        id: typingIndicatorId,
-        content: "typing", // Special content to trigger typing indicator
-        sender: "bot",
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, typingIndicator]);
 
       // After a short delay, replace with the actual response
       setTimeout(() => {
         const botMessage: Message = {
           id: Date.now().toString(),
-          content: data.response,
+          content: responseText,
           sender: "bot",
           timestamp: new Date()
         };

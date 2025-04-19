@@ -48,7 +48,7 @@ export default function SuccessPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
-            <Input value={window.location.origin + chatLink} readOnly className="bg-muted font-mono text-sm" />
+            <Input value={typeof window !== 'undefined' ? window.location.origin + chatLink : chatLink} readOnly className="bg-muted font-mono text-sm" />
             <Button variant="outline" size="icon" onClick={copyToClipboard} className="shrink-0">
               {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
             </Button>
@@ -66,7 +66,7 @@ export default function SuccessPage() {
               Your event chat is now live! Share this link with attendees so they can ask questions about your event.
             </p>
             <p className="text-sm font-medium mt-2">
-              {window.location.origin}{chatLink}
+              {typeof window !== 'undefined' ? window.location.origin + chatLink : chatLink}
             </p>
           </div>
           <div className="flex gap-4">

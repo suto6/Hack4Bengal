@@ -19,8 +19,7 @@ export interface EventData {
   organizer: string;
   details: string;
   time: string;
-  whatsappNumber: string;
-  pdf?: File;
+  whatsappNumber: string; // Used as contactNumber in the backend
 }
 
 // Interface for event response
@@ -33,10 +32,11 @@ export interface EventResponse {
     organizer: string;
     details: string;
     time: string;
+    contactNumber: string;
+    chatLink: string;
     whatsappNumber: string;
     whatsappMessage: string;
     context?: string;
-    pdfPath?: string;
     createdAt?: string;
     updatedAt?: string;
   };
@@ -50,44 +50,49 @@ export interface Event {
   organizer: string;
   details: string;
   time: string;
+  contactNumber: string;
+  chatLink: string;
   whatsappNumber: string;
   whatsappMessage: string;
   context?: string;
-  pdfPath?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
+// Removed PDF upload function
+
 /**
- * Create a new event with PDF upload
- * @param eventData Event data including PDF file
+ * Create a new event
+ * @param eventData Event data
  * @returns Promise with event response
  */
-export const createEventWithPDF = async (eventData: EventData): Promise<EventResponse> => {
+export const createEvent = async (eventData: EventData): Promise<EventResponse> => {
   try {
-    const formData = new FormData();
+    // For debugging - log the data being sent
+    console.log('Sending event data:', JSON.stringify(eventData));
 
-    // Add all event data to form data
-    formData.append('name', eventData.name);
-    formData.append('organizer', eventData.organizer);
-    formData.append('details', eventData.details);
-    formData.append('time', eventData.time);
-    formData.append('whatsappNumber', eventData.whatsappNumber);
-
-    // Add PDF file if provided
-    if (eventData.pdf) {
-      formData.append('pdf', eventData.pdf);
-    }
-
-    // For testing when backend is not available
-    if (process.env.NODE_ENV === 'development' && typeof navigator !== 'undefined' && !navigator.onLine) {
-      console.log('Backend not available, using mock data');
-      // Return mock data for testing
+    // Create a mock event for testing if needed
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
       // Generate a mock event ID
       const mockEventId = 'mock-' + Date.now();
-
       // Generate a web chat link
       const chatLink = `/event/${mockEventId}`;
+
+      console.log('Using mock event data for development');
+
+      // Store the event data in localStorage for the chat page to use
+      localStorage.setItem('eventData', JSON.stringify({
+        id: mockEventId,
+        name: eventData.name,
+        organizer: eventData.organizer,
+        details: eventData.details,
+        time: eventData.time,
+        contactNumber: eventData.whatsappNumber,
+        chatLink: chatLink,
+        whatsappNumber: eventData.whatsappNumber,
+        whatsappMessage: chatLink,
+        context: eventData.details,
+      }));
 
       return {
         success: true,
@@ -103,60 +108,52 @@ export const createEventWithPDF = async (eventData: EventData): Promise<EventRes
           whatsappNumber: eventData.whatsappNumber,
           whatsappMessage: chatLink,
           context: eventData.details,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }
       };
     }
 
-    // Make API request with form data
-    const response = await apiClient.post('/event/create-with-pdf', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      // Increase timeout for large files
-      timeout: 30000,
-    });
+    // Set a timeout for the request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    return response.data;
-  } catch (error) {
-    console.error('Error creating event:', error);
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
-        return {
-          success: false,
-          link: '',
-          error: 'Request timed out. The server might be down or the file is too large.'
-        };
-      }
-      if (error.message === 'Network Error') {
-        return {
-          success: false,
-          link: '',
-          error: 'Network error. Please check if the backend server is running.'
-        };
-      }
-      if (error.response) {
-        return {
-          success: false,
-          link: '',
-          error: error.response.data.error || 'Failed to create event'
-        };
-      }
+    try {
+      // Make the API request with a timeout
+      const response = await apiClient.post('/event/create', eventData, {
+        timeout: 10000, // 10 second timeout
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      console.log('Event created successfully:', response.data);
+      return response.data;
+    } catch (requestError) {
+      clearTimeout(timeoutId);
+      throw requestError; // Re-throw to be caught by the outer catch
     }
-    return { success: false, link: '', error: 'Failed to create event. Please try again later.' };
-  }
-};
-
-/**
- * Create a new event without PDF
- * @param eventData Event data
- * @returns Promise with event response
- */
-export const createEvent = async (eventData: Omit<EventData, 'pdf'>): Promise<EventResponse> => {
-  try {
-    const response = await apiClient.post('/event/create', eventData);
-    return response.data;
   } catch (error) {
     console.error('Error creating event:', error);
+
+    // Handle timeout errors
+    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      return {
+        success: false,
+        link: '',
+        error: 'Request timed out. Please try again.'
+      };
+    }
+
+    // Handle abort errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        success: false,
+        link: '',
+        error: 'Request timed out. Please try again.'
+      };
+    }
+
+    // Handle API errors
     if (axios.isAxiosError(error) && error.response) {
       return {
         success: false,
@@ -164,7 +161,63 @@ export const createEvent = async (eventData: Omit<EventData, 'pdf'>): Promise<Ev
         error: error.response.data.error || 'Failed to create event'
       };
     }
-    return { success: false, link: '', error: 'Failed to create event' };
+
+    // Handle network errors
+    if (axios.isAxiosError(error) && error.message === 'Network Error') {
+      // Create a mock event if network error in development
+      if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+        const mockEventId = 'mock-' + Date.now();
+        const chatLink = `/event/${mockEventId}`;
+
+        console.log('Network error, using mock data');
+
+        // Store the event data in localStorage for the chat page to use
+        localStorage.setItem('eventData', JSON.stringify({
+          id: mockEventId,
+          name: eventData.name,
+          organizer: eventData.organizer,
+          details: eventData.details,
+          time: eventData.time,
+          contactNumber: eventData.whatsappNumber,
+          chatLink: chatLink,
+          whatsappNumber: eventData.whatsappNumber,
+          whatsappMessage: chatLink,
+          context: eventData.details,
+        }));
+
+        return {
+          success: true,
+          link: chatLink,
+          event: {
+            id: mockEventId,
+            name: eventData.name,
+            organizer: eventData.organizer,
+            details: eventData.details,
+            time: eventData.time,
+            contactNumber: eventData.whatsappNumber,
+            chatLink: chatLink,
+            whatsappNumber: eventData.whatsappNumber,
+            whatsappMessage: chatLink,
+            context: eventData.details,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        };
+      }
+
+      return {
+        success: false,
+        link: '',
+        error: 'Network error. Please check your connection and try again.'
+      };
+    }
+
+    // Generic error
+    return {
+      success: false,
+      link: '',
+      error: 'Failed to create event: ' + (error instanceof Error ? error.message : String(error))
+    };
   }
 };
 

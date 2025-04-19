@@ -22,8 +22,7 @@ model Event {
   // Legacy fields kept for backward compatibility
   whatsappNumber  String  @map("whatsappNumber")
   whatsappMessage String  @map("whatsappMessage")
-  context         String?  // Optional field for extracted PDF text
-  pdfPath         String?  // Optional field for PDF file path
+  context         String?  // Optional field for event context (used by the chatbot) - SQLite will handle large text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
