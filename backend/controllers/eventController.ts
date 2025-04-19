@@ -2,6 +2,10 @@
 import { Request, Response } from "express";
 import dotenv from "dotenv";
 import prisma from "../services/prismaService";
+import { Event } from "@prisma/client";
+
+// Type for event data without ID and timestamps
+type EventCreateInput = Omit<Event, 'id' | 'createdAt' | 'updatedAt'>;
 
 // Load environment variables
 dotenv.config();
@@ -25,7 +29,7 @@ export const createEvent = async (req: Request, res: Response): Promise<void> =>
     let chatLink = "/event/placeholder";
 
     // Create event using Prisma
-    const eventData: any = {
+    const eventData: EventCreateInput = {
       name,
       organizer,
       details: details.substring(0, 1000), // Limit details to 1000 chars to avoid DB issues

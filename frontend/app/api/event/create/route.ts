@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data);
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         console.error('Request to backend timed out');
         return NextResponse.json(
           { error: 'Request to backend timed out' },
