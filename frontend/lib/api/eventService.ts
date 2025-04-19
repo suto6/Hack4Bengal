@@ -3,7 +3,8 @@ import axios from 'axios';
 
 // Define the base URL for the API
 // Using relative URL to leverage Next.js API proxy
-const API_BASE_URL = '/api';
+// Or use environment variable if available
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 // Create axios instance
 const apiClient = axios.create({

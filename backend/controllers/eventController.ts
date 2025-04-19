@@ -38,7 +38,8 @@ export const createEvent = async (req: Request, res: Response): Promise<void> =>
       chatLink,
       whatsappNumber,
       whatsappMessage: chatLink,
-      context: details, // Use the full details as context for the chatbot
+      // Create an enhanced context with structured information for the chatbot
+      context: `Event Information:\n\nName: ${name}\nOrganizer: ${organizer}\nTime: ${time}\nContact: ${whatsappNumber}\n\nFull Details:\n${details}\n\nAdditional Notes:\n- Certificates may be provided to participants who attend the full event.\n- Please contact the organizer for any questions about travel and accommodation arrangements.`,
     };
 
     console.log('Event data prepared for saving');

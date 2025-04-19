@@ -24,8 +24,22 @@ export const handleChatMessage = async (req: Request, res: Response): Promise<vo
     }
 
     // Generate response using OpenAI
-    const context = event.context || event.details;
-    const response = await generateResponseFromContext(context, message);
+    // Create a structured context with all event information
+    const structuredContext = `
+Event Name: ${event.name}
+Organizer: ${event.organizer}
+Date/Time: ${event.time}
+Contact: ${event.contactNumber}
+
+Event Details:
+${event.details}
+
+Additional Information:
+${event.context || ''}
+`;
+
+    console.log('Sending structured context to LLM:', structuredContext.substring(0, 200) + '...');
+    const response = await generateResponseFromContext(structuredContext, message);
 
     res.status(200).json({ response });
   } catch (error) {
