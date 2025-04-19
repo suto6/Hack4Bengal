@@ -14,4 +14,3 @@
 - Real-time database and attendance tracking
 - Admin dashboard (coming soon)
 
----
