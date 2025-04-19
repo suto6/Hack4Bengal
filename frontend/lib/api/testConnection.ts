@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Using relative URL to leverage Next.js API proxy
-const API_BASE_URL = '/api';
+// const API_BASE_URL = '/api'; // Uncomment if needed
 
 /**
  * Test the connection to the backend

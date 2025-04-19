@@ -70,11 +70,27 @@ export const sendWhatsAppMessage = async (
  */
 const extractEventName = (message: string): string => {
   // Look for event name in common patterns
-  const eventRegex = /about\s+([^\.!?]+)/i;
-  const match = message.match(eventRegex);
+  // First, try to match the format "interested in the event: [Event Name]"
+  const interestedRegex = /interested in the event:\s*([^\.!?]+)/i;
+  const interestedMatch = message.match(interestedRegex);
 
-  if (match && match[1]) {
-    return match[1].trim();
+  if (interestedMatch && interestedMatch[1]) {
+    return interestedMatch[1].trim();
+  }
+
+  // If that doesn't match, try other common patterns
+  const aboutRegex = /about\s+([^\.!?]+)/i;
+  const aboutMatch = message.match(aboutRegex);
+
+  if (aboutMatch && aboutMatch[1]) {
+    return aboutMatch[1].trim();
+  }
+
+  // If no specific pattern matches, try to extract any potential event name
+  // This is a simple approach - just take the first few words if they might be a name
+  const words = message.split(/\s+/).slice(0, 5).join(' ');
+  if (words.length > 3) {
+    return words;
   }
 
   // If no match, return empty string

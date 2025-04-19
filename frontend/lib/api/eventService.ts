@@ -83,11 +83,15 @@ export const createEventWithPDF = async (eventData: EventData): Promise<EventRes
     if (process.env.NODE_ENV === 'development' && typeof navigator !== 'undefined' && !navigator.onLine) {
       console.log('Backend not available, using mock data');
       // Return mock data for testing
-      // Use a mock Twilio number for testing
-      const mockTwilioNumber = '15716011328'; // Without the + sign
+      // Use the Twilio bot number for the WhatsApp link
+      // In a real app, this would come from environment variables
+      const mockTwilioNumber = '15716011328'; // This should match your .env TWILIO_PHONE_NUMBER
+      const message = `Hi, I'm interested in the event: ${eventData.name}`;
+      const encodedMessage = encodeURIComponent(message);
+
       return {
         success: true,
-        link: `https://wa.me/${mockTwilioNumber}?text=Hi%20about%20${encodeURIComponent(eventData.name)}`,
+        link: `https://wa.me/${mockTwilioNumber}?text=${encodedMessage}`,
         event: {
           id: 'mock-id',
           name: eventData.name,
@@ -95,7 +99,7 @@ export const createEventWithPDF = async (eventData: EventData): Promise<EventRes
           details: eventData.details,
           time: eventData.time,
           whatsappNumber: eventData.whatsappNumber,
-          whatsappMessage: `https://wa.me/${mockTwilioNumber}?text=Hi%20about%20${encodeURIComponent(eventData.name)}`,
+          whatsappMessage: `https://wa.me/${mockTwilioNumber}?text=${encodedMessage}`,
           context: eventData.details,
         }
       };

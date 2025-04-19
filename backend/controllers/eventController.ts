@@ -44,11 +44,13 @@ export const createEvent = async (req: Request, res: Response): Promise<void> =>
   try {
     const { name, organizer, details, time, whatsappNumber } = req.body;
 
-    // Generate WhatsApp message link using Twilio phone number
-    const message = `Hey! I saw your event "${name}" happening at ${time}. I'd love to know more!`;
+    // Generate WhatsApp message link using Twilio bot number
+    // Include the event name in the message so the bot can identify which event to respond about
+    const message = `Hi, I'm interested in the event: ${name}`;
     const encodedMessage = encodeURIComponent(message);
-    // Use Twilio phone number instead of organizer's number
-    const link = `https://wa.me/${TWILIO_PHONE_NUMBER.replace('+', '')}?text=${encodedMessage}`;
+    // Use the Twilio phone number from .env
+    const twilioNumber = TWILIO_PHONE_NUMBER.replace(/\D/g, '').replace('whatsapp:', '');
+    const link = `https://wa.me/${twilioNumber}?text=${encodedMessage}`;
 
     // Create event using Prisma
     const event = await prisma.event.create({
@@ -130,11 +132,13 @@ export const createEventWithPDF = async (req: Request, res: Response): Promise<v
   try {
     const { name, organizer, details, time, whatsappNumber } = req.body;
 
-    // Generate WhatsApp message link using Twilio phone number
-    const message = `Hey! I saw your event "${name}" happening at ${time}. I'd love to know more!`;
+    // Generate WhatsApp message link using Twilio bot number
+    // Include the event name in the message so the bot can identify which event to respond about
+    const message = `Hi, I'm interested in the event: ${name}`;
     const encodedMessage = encodeURIComponent(message);
-    // Use Twilio phone number instead of organizer's number
-    const link = `https://wa.me/${TWILIO_PHONE_NUMBER.replace('+', '')}?text=${encodedMessage}`;
+    // Use the Twilio phone number from .env
+    const twilioNumber = TWILIO_PHONE_NUMBER.replace(/\D/g, '').replace('whatsapp:', '');
+    const link = `https://wa.me/${twilioNumber}?text=${encodedMessage}`;
 
     let context = details;
     let pdfPath = "";
