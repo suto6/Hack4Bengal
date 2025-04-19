@@ -82,9 +82,9 @@ export default function CreateEventPage() {
       const response = await createEventWithPDF(eventData)
 
       if (response.success) {
-        // Store the WhatsApp link in localStorage to use on success page
+        // Store the chat link in localStorage to use on success page
         if (typeof window !== 'undefined') {
-          localStorage.setItem('whatsappLink', response.link)
+          localStorage.setItem('chatLink', response.link)
           localStorage.setItem('eventName', eventName)
         }
         router.push('/success')
@@ -104,7 +104,7 @@ export default function CreateEventPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Create Your Event</CardTitle>
-          <CardDescription>Fill in the details below to set up your WhatsApp ticketing flow</CardDescription>
+          <CardDescription>Fill in the details below to set up your event chat assistant</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -144,7 +144,7 @@ export default function CreateEventPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="organizerPhone">WhatsApp Number</Label>
+                <Label htmlFor="organizerPhone">Contact Number</Label>
                 <Input
                   id="organizerPhone"
                   type="tel"
@@ -153,7 +153,7 @@ export default function CreateEventPage() {
                   value={organizerPhone}
                   onChange={(e) => setOrganizerPhone(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">This number will receive WhatsApp messages from attendees</p>
+                <p className="text-xs text-muted-foreground">This number will be displayed on the event chat page</p>
               </div>
 
               <div className="grid gap-2">
@@ -271,7 +271,7 @@ export default function CreateEventPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Event..." : "Generate WhatsApp Link"}
+              {isLoading ? "Creating Event..." : "Create Event Chat"}
             </Button>
           </form>
         </CardContent>

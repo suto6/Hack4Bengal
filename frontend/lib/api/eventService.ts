@@ -83,23 +83,25 @@ export const createEventWithPDF = async (eventData: EventData): Promise<EventRes
     if (process.env.NODE_ENV === 'development' && typeof navigator !== 'undefined' && !navigator.onLine) {
       console.log('Backend not available, using mock data');
       // Return mock data for testing
-      // Use the Twilio bot number for the WhatsApp link
-      // In a real app, this would come from environment variables
-      const mockTwilioNumber = '15716011328'; // This should match your .env TWILIO_PHONE_NUMBER
-      const message = `Hi, I'm interested in the event: ${eventData.name}`;
-      const encodedMessage = encodeURIComponent(message);
+      // Generate a mock event ID
+      const mockEventId = 'mock-' + Date.now();
+
+      // Generate a web chat link
+      const chatLink = `/event/${mockEventId}`;
 
       return {
         success: true,
-        link: `https://wa.me/${mockTwilioNumber}?text=${encodedMessage}`,
+        link: chatLink,
         event: {
-          id: 'mock-id',
+          id: mockEventId,
           name: eventData.name,
           organizer: eventData.organizer,
           details: eventData.details,
           time: eventData.time,
+          contactNumber: eventData.whatsappNumber,
+          chatLink: chatLink,
           whatsappNumber: eventData.whatsappNumber,
-          whatsappMessage: `https://wa.me/${mockTwilioNumber}?text=${encodedMessage}`,
+          whatsappMessage: chatLink,
           context: eventData.details,
         }
       };
@@ -177,5 +179,36 @@ export const getEvents = async (): Promise<Event[]> => {
   } catch (error) {
     console.error('Error fetching events:', error);
     return [];
+  }
+};
+
+/**
+ * Get event by ID
+ * @param eventId Event ID
+ * @returns Promise with event data
+ */
+export const getEventById = async (eventId: string): Promise<Event> => {
+  try {
+    const response = await apiClient.get(`/event/${eventId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching event with ID ${eventId}:`, error);
+    throw new Error('Event not found');
+  }
+};
+
+/**
+ * Send a chat message and get a response
+ * @param eventId Event ID
+ * @param message User message
+ * @returns Promise with AI response
+ */
+export const sendChatMessage = async (eventId: string, message: string): Promise<{ response: string }> => {
+  try {
+    const response = await apiClient.post('/chat', { eventId, message });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending chat message:', error);
+    throw new Error('Failed to get response');
   }
 };

@@ -8,7 +8,8 @@ import { seedDatabase } from "./services/prismaService";
 
 // Import routes
 import eventRoutes from "./routes/eventRoutes";
-import whatsappRoutes from "./routes/whatsappRoutes";
+// WhatsApp routes removed - using web chat only
+import chatRoutes from "./routes/chatRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -27,7 +28,8 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/event", eventRoutes);
-app.use("/api/whatsapp", whatsappRoutes);
+// WhatsApp routes removed - using web chat only
+app.use("/api/chat", chatRoutes);
 
 // Health check route
 app.get("/health", (req, res) => {
@@ -44,7 +46,7 @@ const startServer = async () => {
     // Start the server
     app.listen(PORT, () => {
       console.log(`Backend running on port ${PORT}`);
-      console.log(`WhatsApp webhook URL: http://your-domain.com/api/whatsapp/webhook`);
+      console.log(`Web chat is available at: http://localhost:3008/event/:eventId`);
     });
   } catch (error) {
     console.error('Error initializing database:', error);

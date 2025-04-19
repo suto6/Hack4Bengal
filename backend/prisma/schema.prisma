@@ -17,8 +17,11 @@ model Event {
   organizer       String
   details         String
   time            String
-  whatsappNumber  String
-  whatsappMessage String
+  contactNumber   String  // Contact number for the event organizer
+  chatLink        String  // Web chat link for the event
+  // Legacy fields kept for backward compatibility
+  whatsappNumber  String  @map("whatsappNumber")
+  whatsappMessage String  @map("whatsappMessage")
   context         String?  // Optional field for extracted PDF text
   pdfPath         String?  // Optional field for PDF file path
   createdAt       DateTime @default(now())

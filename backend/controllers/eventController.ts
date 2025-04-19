@@ -10,15 +10,12 @@ import prisma from "../services/prismaService";
 // Load environment variables
 dotenv.config();
 
-// Get Twilio phone number from environment variables
-const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER || '';
-
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_, file, cb) => {
     cb(null, path.join(__dirname, "../uploads"));
   },
-  filename: (req, file, cb) => {
+  filename: (_, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + "-" + file.originalname);
   },
@@ -26,7 +23,7 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
   storage,
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_, file, cb) => {
     if (file.mimetype === "application/pdf") {
       cb(null, true);
     } else {
@@ -42,31 +39,43 @@ export const upload = multer({
 // Create a new event
 export const createEvent = async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log('Creating event with data:', req.body);
     const { name, organizer, details, time, whatsappNumber } = req.body;
 
-    // Generate WhatsApp message link using Twilio bot number
-    // Include the event name in the message so the bot can identify which event to respond about
-    const message = `Hi, I'm interested in the event: ${name}`;
-    const encodedMessage = encodeURIComponent(message);
-    // Use the Twilio phone number from .env
-    const twilioNumber = TWILIO_PHONE_NUMBER.replace(/\D/g, '').replace('whatsapp:', '');
-    const link = `https://wa.me/${twilioNumber}?text=${encodedMessage}`;
+    // Generate a web chat link
+    let chatLink = "/event/placeholder";
 
     // Create event using Prisma
+    const eventData: any = {
+      name,
+      organizer,
+      details,
+      time,
+      contactNumber: whatsappNumber,
+      chatLink,
+      whatsappNumber,
+      whatsappMessage: chatLink,
+    };
+
+    console.log('Event data to be saved:', eventData);
+
     const event = await prisma.event.create({
-      data: {
-        name,
-        organizer,
-        details,
-        time,
-        whatsappNumber,
-        whatsappMessage: link,
-      },
+      data: eventData,
     });
 
-    res.status(201).json({ success: true, link, event });
+    console.log('Event created successfully:', event);
+
+    // Update the chat link with the actual event ID
+    chatLink = `/event/${event.id}`;
+
+    res.status(201).json({
+      success: true,
+      link: chatLink,
+      event
+    });
   } catch (err) {
     console.error("Event creation failed:", err);
+    console.error("Error details:", JSON.stringify(err));
     res.status(500).json({ error: "Event creation failed" });
   }
 };
@@ -117,7 +126,7 @@ export const uploadEventPDF = async (req: Request, res: Response): Promise<void>
 };
 
 // Get all events
-export const getAllEvents = async (req: Request, res: Response): Promise<void> => {
+export const getAllEvents = async (_: Request, res: Response): Promise<void> => {
   try {
     const events = await prisma.event.findMany();
     res.status(200).json(events);
@@ -127,18 +136,34 @@ export const getAllEvents = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+// Get event by ID
+export const getEventById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId }
+    });
+
+    if (!event) {
+      res.status(404).json({ error: "Event not found" });
+      return;
+    }
+
+    res.status(200).json(event);
+  } catch (err) {
+    console.error("Error fetching event:", err);
+    res.status(500).json({ error: "Failed to fetch event" });
+  }
+};
+
 // Create event with PDF upload in one step
 export const createEventWithPDF = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, organizer, details, time, whatsappNumber } = req.body;
 
-    // Generate WhatsApp message link using Twilio bot number
-    // Include the event name in the message so the bot can identify which event to respond about
-    const message = `Hi, I'm interested in the event: ${name}`;
-    const encodedMessage = encodeURIComponent(message);
-    // Use the Twilio phone number from .env
-    const twilioNumber = TWILIO_PHONE_NUMBER.replace(/\D/g, '').replace('whatsapp:', '');
-    const link = `https://wa.me/${twilioNumber}?text=${encodedMessage}`;
+    // Generate a web chat link
+    let chatLink = "/event/placeholder";
 
     let context = details;
     let pdfPath = "";
@@ -150,23 +175,30 @@ export const createEventWithPDF = async (req: Request, res: Response): Promise<v
     }
 
     // Create event using Prisma
+    const eventData: any = {
+      name,
+      organizer,
+      details,
+      time,
+      contactNumber: whatsappNumber,
+      chatLink,
+      whatsappNumber,
+      whatsappMessage: chatLink,
+      context,
+      pdfPath,
+    };
+
     const event = await prisma.event.create({
-      data: {
-        name,
-        organizer,
-        details,
-        time,
-        whatsappNumber,
-        whatsappMessage: link,
-        context,
-        pdfPath,
-      },
+      data: eventData,
     });
+
+    // Update the chat link with the actual event ID
+    chatLink = `/event/${event.id}`;
 
     res.status(201).json({
       success: true,
-      link,
-      event,
+      link: chatLink,
+      event
     });
   } catch (err) {
     console.error("Event creation with PDF failed:", err);

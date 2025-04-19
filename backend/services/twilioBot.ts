@@ -22,15 +22,31 @@ export const handleWhatsAppMessage = async (
   body: string
 ): Promise<string> => {
   try {
-    // Extract the event name from the message or use a default approach
-    // This is a simple implementation - in a real app, you might want to track conversations
+    // Check if this is a join code message
+    const joinCodeRegex = /^join\s+([\w-]+)$/i;
+    const joinMatch = body.match(joinCodeRegex);
+
+    if (joinMatch && joinMatch[1]) {
+      const joinCode = `join ${joinMatch[1]}`;
+
+      // Find the event with this join code
+      const event = await findEventByJoinCode(joinCode);
+
+      if (event) {
+        return `Welcome to the ${event.name} event assistant! You can now ask me any questions about the event.`;
+      } else {
+        return "I couldn't find an event with that code. Please check and try again.";
+      }
+    }
+
+    // For regular messages, try to find the event by name or previous interactions
     const eventName = extractEventName(body);
 
     // Find the event in the database
     const event = await findEventByNameOrNumber(eventName, from);
 
     if (!event) {
-      return "Sorry, I couldn't find information about this event. Please make sure you're using the correct link.";
+      return "Sorry, I couldn't find information about this event. Please make sure you're using the correct join code.";
     }
 
     // Generate response using OpenAI
@@ -95,6 +111,22 @@ const extractEventName = (message: string): string => {
 
   // If no match, return empty string
   return '';
+};
+
+/**
+ * Find event by join code
+ */
+const findEventByJoinCode = async (joinCode: string): Promise<any> => {
+  // Use raw SQL query to find the event by join code
+  // This bypasses the Prisma type issues
+  try {
+    const events = await prisma.event.findMany();
+    // Use type assertion to tell TypeScript that the event object includes joinCode
+    return events.find(event => (event as any).joinCode === joinCode);
+  } catch (error) {
+    console.error('Error finding event by join code:', error);
+    return null;
+  }
 };
 
 /**
