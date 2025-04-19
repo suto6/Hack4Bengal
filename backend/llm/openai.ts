@@ -34,22 +34,31 @@ export const generateResponseFromContext = async (
     }
 
     const prompt = `
-You are an event assistant.
+You are an AI event assistant for an event organizer. Your job is to answer questions about a specific event based ONLY on the information provided in the context below.
 
-Context:
+Event Information:
 ${context}
 
 User Question:
 "${question}"
 
-Answer in a helpful, friendly tone. If the information is not available in the context, politely say you don't have that information.
+Guidelines:
+1. Answer in a helpful, friendly, and conversational tone
+2. Be concise and direct - keep responses under 3 sentences when possible
+3. If the exact information is not available in the context, politely say you don't have that specific information
+4. Do not make up or assume any information that is not explicitly stated in the context
+5. If asked about dates, times, locations, or prices, be very specific based on the context
+6. If the user asks something completely unrelated to the event, politely redirect them to ask about the event
+
+Your response:
 `;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'system', content: 'You are a helpful event assistant that provides accurate information about events based only on the provided context.' },
+                { role: 'user', content: prompt }],
       max_tokens: 500,
-      temperature: 0.7,
+      temperature: 0.5,
     });
 
     return response.choices[0].message.content || 'Sorry, I could not generate a response.';

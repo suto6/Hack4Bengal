@@ -8,12 +8,126 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+
+import { CalendarIcon, Clock } from "lucide-react"
+
 import { CalendarIcon, Clock, FileText, Upload, Globe } from "lucide-react"
+
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+import { createEvent, EventData } from "@/lib/api/eventService"
+
+export default function CreateEventPage() {
+  const router = useRouter()
+  const [date, setDate] = useState<Date>()
+  const [hours, setHours] = useState<string>('')
+  const [minutes, setMinutes] = useState<string>('')
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+  // Removed PDF-related state variables
+
+  // Form field states
+  const [eventName, setEventName] = useState<string>('')
+  const [organizerName, setOrganizerName] = useState<string>('')
+  const [organizerEmail, setOrganizerEmail] = useState<string>('')
+  const [organizerPhone, setOrganizerPhone] = useState<string>('')
+  const [eventDescription, setEventDescription] = useState<string>('')
+  const [eventFaqs, setEventFaqs] = useState<string>('')
+
+  // Removed PDF file handling function
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
+
+    try {
+      // Validate required fields
+      if (!eventName) {
+        setError('Event name is required')
+        setIsLoading(false)
+        return
+      }
+
+      if (!organizerName) {
+        setError('Organizer name is required')
+        setIsLoading(false)
+        return
+      }
+
+      if (!eventDescription) {
+        setError('Event description is required')
+        setIsLoading(false)
+        return
+      }
+
+      if (!organizerPhone) {
+        setError('Contact number is required')
+        setIsLoading(false)
+        return
+      }
+
+      // Format date and time
+      let timeString = ''
+      if (date) {
+        timeString = format(date, 'MMMM d, yyyy')
+        if (hours && minutes) {
+          timeString += ` at ${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`
+        }
+      } else {
+        // If no date is selected, use a default date format
+        timeString = 'Date to be announced'
+      }
+
+      // Combine description and FAQs for the context
+      const fullContext = `${eventDescription}\n\n${eventFaqs ? 'FAQs:\n' + eventFaqs : ''}`
+
+      console.log('Creating event with data:', {
+        name: eventName,
+        organizer: organizerName,
+        time: timeString,
+        phone: organizerPhone
+      })
+
+      const eventData: EventData = {
+        name: eventName,
+        organizer: organizerName,
+        details: fullContext,
+        time: timeString,
+        whatsappNumber: organizerPhone.replace(/\D/g, ''), // Remove non-digits
+      }
+
+      // Try to create the event
+      const response = await createEvent(eventData)
+
+      if (response.success) {
+        console.log('Event created successfully:', response)
+        // Store the chat link in localStorage to use on success page
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('chatLink', response.link)
+          localStorage.setItem('eventName', eventName)
+
+          // Also store the full event data for the chat page to use
+          if (response.event) {
+            localStorage.setItem('eventData', JSON.stringify(response.event))
+          }
+        }
+        router.push('/success')
+      } else {
+        console.error('Failed to create event:', response.error)
+        setError(response.error || 'Failed to create event')
+      }
+    } catch (err) {
+      console.error('Error creating event:', err)
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function CreateEventPage() {
@@ -103,6 +217,7 @@ export default function CreateEventPage() {
     e.preventDefault()
     // In a real app, we would submit the form data to an API
     router.push("/success")
+
   }
 
   // Common timezones for the dropdown
@@ -116,29 +231,61 @@ export default function CreateEventPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Create Your Event</CardTitle>
-          <CardDescription>Fill in the details below to set up your WhatsApp ticketing flow</CardDescription>
+          <CardDescription>Fill in the details below to set up your event chat assistant</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="eventName">Event Name</Label>
-                <Input id="eventName" placeholder="Tech Conference 2023" required />
+                <Input
+                  id="eventName"
+                  placeholder="Tech Conference 2023"
+                  required
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="organizerName">Organizer Name</Label>
-                <Input id="organizerName" placeholder="Your name or organization" required />
+                <Input
+                  id="organizerName"
+                  placeholder="Your name or organization"
+                  required
+                  value={organizerName}
+                  onChange={(e) => setOrganizerName(e.target.value)}
+                />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="organizerEmail">Organizer Email</Label>
-                <Input id="organizerEmail" type="email" placeholder="you@example.com" required />
+                <Input
+                  id="organizerEmail"
+                  type="email"
+                  placeholder="you@example.com"
+                  required
+                  value={organizerEmail}
+                  onChange={(e) => setOrganizerEmail(e.target.value)}
+                />
               </div>
 
               <div className="grid gap-2">
+
+                <Label htmlFor="organizerPhone">Contact Number</Label>
+                <Input
+                  id="organizerPhone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  required
+                  value={organizerPhone}
+                  onChange={(e) => setOrganizerPhone(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">This number will be displayed on the event chat page</p>
+
                 <Label htmlFor="organizerPhone">Organizer Phone (optional)</Label>
                 <Input id="organizerPhone" type="tel" placeholder="+1 (555) 123-4567" />
+
               </div>
 
               {/* Date Range Section */}
@@ -347,13 +494,32 @@ export default function CreateEventPage() {
                 <Label htmlFor="eventDescription">Event Description</Label>
                 <Textarea
                   id="eventDescription"
-                  placeholder="Describe your event..."
-                  className="min-h-[100px]"
+                  placeholder="Describe your event in detail..."
+                  className="min-h-[150px]"
                   required
+                  value={eventDescription}
+                  onChange={(e) => setEventDescription(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Include all important details about your event such as venue, schedule, speakers, etc.
+                  This information will be used by the AI to answer attendee questions.
+                </p>
               </div>
 
               <div className="grid gap-2">
+
+                <Label htmlFor="eventFaqs">FAQs / Additional Information</Label>
+                <Textarea
+                  id="eventFaqs"
+                  placeholder="Add frequently asked questions and answers, or any additional information..."
+                  className="min-h-[150px]"
+                  value={eventFaqs}
+                  onChange={(e) => setEventFaqs(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Add any FAQs, rules, guidelines, or other information that attendees might ask about.
+                </p>
+
                 <Label htmlFor="eventFaqs">FAQs / Extra Info</Label>
                 <Textarea id="eventFaqs" placeholder="Additional information, FAQs, etc." className="min-h-[100px]" />
               </div>
@@ -421,11 +587,17 @@ export default function CreateEventPage() {
                     </div>
                   )}
                 </div>
+
               </div>
             </div>
 
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Creating Event..." : "Create Event Chat"}
+
             <Button type="submit" className="w-full">
               Generate WhatsApp Link
+
             </Button>
           </form>
         </CardContent>

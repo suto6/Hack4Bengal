@@ -15,7 +15,8 @@ export function ConnectionTest() {
       const response = await testBackendConnection();
       setStatus('success');
       setMessage(`Backend connection successful: ${response.status}`);
-    } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       setStatus('error');
       setMessage('Failed to connect to backend. Make sure the backend server is running.');
     }

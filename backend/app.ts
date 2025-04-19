@@ -1,14 +1,15 @@
 // app.ts
 import express from "express";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
 import cors from "cors";
 import bodyParser from "body-parser";
+import { seedDatabase } from "./services/prismaService";
 
 // Import routes
 import eventRoutes from "./routes/eventRoutes";
-import whatsappRoutes from "./routes/whatsappRoutes";
+// WhatsApp routes removed - using web chat only
+import chatRoutes from "./routes/chatRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -27,35 +28,31 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/event", eventRoutes);
-app.use("/api/whatsapp", whatsappRoutes);
+// WhatsApp routes removed - using web chat only
+app.use("/api/chat", chatRoutes);
 
 // Health check route
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// Start the server regardless of MongoDB connection
-const startServer = () => {
-  app.listen(PORT, () => {
-    console.log(`Backend running on port ${PORT}`);
-    console.log(`WhatsApp webhook URL: http://your-domain.com/api/whatsapp/webhook`);
-  });
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    // Seed the database with sample data if needed
+    await seedDatabase();
+    console.log('Database initialized successfully');
+
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`Backend running on port ${PORT}`);
+      console.log(`Web chat is available at: http://localhost:3008/event/:eventId`);
+    });
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    process.exit(1);
+  }
 };
 
-// Try to connect to MongoDB, but start server even if it fails
-if (process.env.MONGO_URI) {
-  mongoose
-    .connect(process.env.MONGO_URI)
-    .then(() => {
-      console.log('Connected to MongoDB');
-      startServer();
-    })
-    .catch((err) => {
-      console.error("MongoDB connection error:", err);
-      console.log("Starting server without MongoDB...");
-      startServer();
-    });
-} else {
-  console.log("No MongoDB URI provided. Starting server with in-memory storage...");
-  startServer();
-}
+// Start the server
+startServer();

@@ -20,6 +20,14 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
 
+  // Form state for event settings
+  const [eventName, setEventName] = useState<string>('')
+  const [eventDate, setEventDate] = useState<string>('')
+  const [eventDescription, setEventDescription] = useState<string>('')
+  const [whatsappNumber, setWhatsappNumber] = useState<string>('')
+  const [isSaving, setIsSaving] = useState<boolean>(false)
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false)
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -30,6 +38,12 @@ export default function DashboardPage() {
         // Select the first event by default if available
         if (eventsData.length > 0) {
           setSelectedEvent(eventsData[0])
+
+          // Initialize form state with selected event data
+          setEventName(eventsData[0].name)
+          setEventDate(eventsData[0].time)
+          setEventDescription(eventsData[0].details)
+          setWhatsappNumber(eventsData[0].whatsappNumber)
         }
       } catch (err) {
         console.error('Error fetching events:', err)
@@ -101,14 +115,22 @@ export default function DashboardPage() {
               <select
                 id="eventSelect"
                 className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2"
-                value={selectedEvent?._id || ''}
+                value={selectedEvent?.id || ''}
                 onChange={(e) => {
-                  const selected = events.find(event => event._id === e.target.value)
-                  if (selected) setSelectedEvent(selected)
+                  const selected = events.find(event => event.id === e.target.value)
+                  if (selected) {
+                    setSelectedEvent(selected)
+
+                    // Update form state when event selection changes
+                    setEventName(selected.name)
+                    setEventDate(selected.time)
+                    setEventDescription(selected.details)
+                    setWhatsappNumber(selected.whatsappNumber)
+                  }
                 }}
               >
                 {events.map(event => (
-                  <option key={event._id} value={event._id}>{event.name}</option>
+                  <option key={event.id} value={event.id}>{event.name}</option>
                 ))}
               </select>
             </div>
@@ -239,23 +261,36 @@ export default function DashboardPage() {
                 <>
                   <div className="grid gap-2">
                     <Label htmlFor="eventName">Event Name</Label>
-                    <Input id="eventName" defaultValue={selectedEvent.name} />
+                    <Input
+                      id="eventName"
+                      value={eventName}
+                      onChange={(e) => setEventName(e.target.value)}
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="eventDate">Event Date</Label>
-                    <Input id="eventDate" defaultValue={selectedEvent.time} />
+                    <Input
+                      id="eventDate"
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="eventDescription">Event Description</Label>
                     <Textarea
                       id="eventDescription"
-                      defaultValue={selectedEvent.details}
+                      value={eventDescription}
+                      onChange={(e) => setEventDescription(e.target.value)}
                       className="min-h-[100px]"
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="whatsappNumber">WhatsApp Number</Label>
-                    <Input id="whatsappNumber" defaultValue={selectedEvent.whatsappNumber} />
+                    <Input
+                      id="whatsappNumber"
+                      value={whatsappNumber}
+                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="whatsappLink">WhatsApp Link</Label>
@@ -278,8 +313,27 @@ export default function DashboardPage() {
                   <p>No event selected</p>
                 </div>
               )}
-              <div className="flex justify-end">
-                <Button>Save Changes</Button>
+              <div className="flex justify-end gap-2">
+                {saveSuccess && (
+                  <div className="text-green-500 flex items-center">
+                    <span>Changes saved successfully!</span>
+                  </div>
+                )}
+                <Button
+                  onClick={() => {
+                    setIsSaving(true);
+                    // Simulate API call to save changes
+                    setTimeout(() => {
+                      setIsSaving(false);
+                      setSaveSuccess(true);
+                      // Hide success message after 3 seconds
+                      setTimeout(() => setSaveSuccess(false), 3000);
+                    }, 1000);
+                  }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
               </div>
             </CardContent>
           </Card>

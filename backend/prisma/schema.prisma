@@ -1,0 +1,28 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Event model
+model Event {
+  id              String   @id @default(uuid())
+  name            String
+  organizer       String
+  details         String
+  time            String
+  contactNumber   String  // Contact number for the event organizer
+  chatLink        String  // Web chat link for the event
+  // Legacy fields kept for backward compatibility
+  whatsappNumber  String  @map("whatsappNumber")
+  whatsappMessage String  @map("whatsappMessage")
+  context         String?  // Optional field for event context (used by the chatbot) - SQLite will handle large text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
