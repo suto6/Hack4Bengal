@@ -339,8 +339,8 @@ export default function CreateEventPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>git checkout main
-git pull origin main
+              </div>
+              
 
 
               <div className="grid gap-2">
