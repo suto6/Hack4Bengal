@@ -34,15 +34,28 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// Connect to MongoDB and start server
-mongoose
-  .connect(process.env.MONGO_URI!)
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Backend running on port ${PORT}`);
-      console.log(`WhatsApp webhook URL: http://your-domain.com/api/whatsapp/webhook`);
-    });
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err);
+// Start the server regardless of MongoDB connection
+const startServer = () => {
+  app.listen(PORT, () => {
+    console.log(`Backend running on port ${PORT}`);
+    console.log(`WhatsApp webhook URL: http://your-domain.com/api/whatsapp/webhook`);
   });
+};
+
+// Try to connect to MongoDB, but start server even if it fails
+if (process.env.MONGO_URI) {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+      console.log('Connected to MongoDB');
+      startServer();
+    })
+    .catch((err) => {
+      console.error("MongoDB connection error:", err);
+      console.log("Starting server without MongoDB...");
+      startServer();
+    });
+} else {
+  console.log("No MongoDB URI provided. Starting server with in-memory storage...");
+  startServer();
+}

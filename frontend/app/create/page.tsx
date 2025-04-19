@@ -74,8 +74,10 @@ export default function CreateEventPage() {
 
       if (response.success) {
         // Store the WhatsApp link in localStorage to use on success page
-        localStorage.setItem('whatsappLink', response.link)
-        localStorage.setItem('eventName', eventName)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('whatsappLink', response.link)
+          localStorage.setItem('eventName', eventName)
+        }
         router.push('/success')
       } else {
         setError(response.error || 'Failed to create event')

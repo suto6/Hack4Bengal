@@ -2,7 +2,8 @@
 import axios from 'axios';
 
 // Define the base URL for the API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Using relative URL to leverage Next.js API proxy
+const API_BASE_URL = '/api';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -74,24 +75,62 @@ export const createEventWithPDF = async (eventData: EventData): Promise<EventRes
       formData.append('pdf', eventData.pdf);
     }
 
+    // For testing when backend is not available
+    if (process.env.NODE_ENV === 'development' && typeof navigator !== 'undefined' && !navigator.onLine) {
+      console.log('Backend not available, using mock data');
+      // Return mock data for testing
+      return {
+        success: true,
+        link: `https://wa.me/1234567890?text=Hi%20about%20${encodeURIComponent(eventData.name)}`,
+        event: {
+          _id: 'mock-id',
+          name: eventData.name,
+          organizer: eventData.organizer,
+          details: eventData.details,
+          time: eventData.time,
+          whatsappNumber: eventData.whatsappNumber,
+          whatsappMessage: `https://wa.me/1234567890?text=Hi%20about%20${encodeURIComponent(eventData.name)}`,
+          context: eventData.details,
+        }
+      };
+    }
+
     // Make API request with form data
     const response = await apiClient.post('/event/create-with-pdf', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      // Increase timeout for large files
+      timeout: 30000,
     });
 
     return response.data;
   } catch (error) {
     console.error('Error creating event:', error);
-    if (axios.isAxiosError(error) && error.response) {
-      return {
-        success: false,
-        link: '',
-        error: error.response.data.error || 'Failed to create event'
-      };
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        return {
+          success: false,
+          link: '',
+          error: 'Request timed out. The server might be down or the file is too large.'
+        };
+      }
+      if (error.message === 'Network Error') {
+        return {
+          success: false,
+          link: '',
+          error: 'Network error. Please check if the backend server is running.'
+        };
+      }
+      if (error.response) {
+        return {
+          success: false,
+          link: '',
+          error: error.response.data.error || 'Failed to create event'
+        };
+      }
     }
-    return { success: false, link: '', error: 'Failed to create event' };
+    return { success: false, link: '', error: 'Failed to create event. Please try again later.' };
   }
 };
 

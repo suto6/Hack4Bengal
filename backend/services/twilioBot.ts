@@ -3,6 +3,10 @@ import twilio from 'twilio';
 import dotenv from 'dotenv';
 import { Event } from '../models/Event';
 import { generateResponseFromContext } from '../llm/openai';
+import * as inMemoryStore from '../utils/inMemoryStore';
+
+// Flag to determine if we're using MongoDB or in-memory store
+const useMongoDb = process.env.MONGO_URI ? true : false;
 
 dotenv.config();
 
@@ -25,17 +29,17 @@ export const handleWhatsAppMessage = async (
     // Extract the event name from the message or use a default approach
     // This is a simple implementation - in a real app, you might want to track conversations
     const eventName = extractEventName(body);
-    
+
     // Find the event in the database
     const event = await findEventByNameOrNumber(eventName, from);
-    
+
     if (!event) {
       return "Sorry, I couldn't find information about this event. Please make sure you're using the correct link.";
     }
-    
+
     // Generate response using OpenAI
     const response = await generateResponseFromContext(event.context || event.details, body);
-    
+
     return response;
   } catch (error) {
     console.error('Error handling WhatsApp message:', error);
@@ -72,11 +76,11 @@ const extractEventName = (message: string): string => {
   // Look for event name in common patterns
   const eventRegex = /about\s+([^\.!?]+)/i;
   const match = message.match(eventRegex);
-  
+
   if (match && match[1]) {
     return match[1].trim();
   }
-  
+
   // If no match, return empty string
   return '';
 };
@@ -90,16 +94,29 @@ const findEventByNameOrNumber = async (
 ): Promise<any> => {
   // Remove 'whatsapp:' prefix if present
   const cleanNumber = phoneNumber.replace('whatsapp:', '');
-  
-  // Try to find by event name first
-  if (eventName) {
-    const event = await Event.findOne({
-      name: { $regex: new RegExp(eventName, 'i') }
-    });
-    
-    if (event) return event;
+
+  if (useMongoDb) {
+    // Try to find by event name first in MongoDB
+    if (eventName) {
+      const event = await Event.findOne({
+        name: { $regex: new RegExp(eventName, 'i') }
+      });
+
+      if (event) return event;
+    }
+
+    // If not found by name, try to find by WhatsApp number in MongoDB
+    return await Event.findOne({ whatsappNumber: cleanNumber });
+  } else {
+    // Use in-memory store
+    // Try to find by event name first
+    if (eventName) {
+      const events = inMemoryStore.findEventsByName(eventName);
+      if (events.length > 0) return events[0];
+    }
+
+    // If not found by name, try to find by WhatsApp number
+    const events = inMemoryStore.findEventsByWhatsAppNumber(cleanNumber);
+    return events.length > 0 ? events[0] : null;
   }
-  
-  // If not found by name, try to find by WhatsApp number
-  return await Event.findOne({ whatsappNumber: cleanNumber });
 };

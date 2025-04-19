@@ -22,8 +22,10 @@ export function ConnectionTest() {
   };
 
   useEffect(() => {
-    // Test connection on component mount
-    testConnection();
+    // Test connection on component mount, but only on the client side
+    if (typeof window !== 'undefined') {
+      testConnection();
+    }
   }, []);
 
   return (

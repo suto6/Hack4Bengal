@@ -1,7 +1,8 @@
 // lib/api/testConnection.ts
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Using relative URL to leverage Next.js API proxy
+const API_BASE_URL = '/api';
 
 /**
  * Test the connection to the backend
@@ -9,7 +10,14 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/a
  */
 export const testBackendConnection = async (): Promise<{ status: string }> => {
   try {
-    const response = await axios.get(`${API_BASE_URL.replace('/api', '')}/health`);
+    // For testing when backend is not available
+    if (process.env.NODE_ENV === 'development' && typeof navigator !== 'undefined' && !navigator.onLine) {
+      console.log('Backend not available, using mock data');
+      // Return mock data for testing
+      return { status: 'ok (mocked)' };
+    }
+
+    const response = await axios.get('/health', { timeout: 5000 });
     return response.data;
   } catch (error) {
     console.error('Error testing backend connection:', error);

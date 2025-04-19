@@ -3,12 +3,13 @@ import { Request, Response } from "express";
 import { handleWhatsAppMessage, sendWhatsAppMessage } from "../services/twilioBot";
 
 // Handle incoming WhatsApp webhook
-export const handleWebhook = async (req: Request, res: Response) => {
+export const handleWebhook = async (req: Request, res: Response): Promise<void> => {
   try {
     const { From, Body } = req.body;
 
     if (!From || !Body) {
-      return res.status(400).json({ error: "Missing required parameters" });
+      res.status(400).json({ error: "Missing required parameters" });
+      return;
     }
 
     // Process the message and generate a response
@@ -32,12 +33,13 @@ export const handleWebhook = async (req: Request, res: Response) => {
 };
 
 // Test endpoint to send a WhatsApp message
-export const sendMessage = async (req: Request, res: Response) => {
+export const sendMessage = async (req: Request, res: Response): Promise<void> => {
   try {
     const { to, message } = req.body;
 
     if (!to || !message) {
-      return res.status(400).json({ error: "Missing required parameters" });
+      res.status(400).json({ error: "Missing required parameters" });
+      return;
     }
 
     await sendWhatsAppMessage(to, message);

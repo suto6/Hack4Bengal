@@ -14,15 +14,17 @@ export default function SuccessPage() {
 
   useEffect(() => {
     // Get the WhatsApp link from localStorage
-    const storedLink = localStorage.getItem('whatsappLink')
-    const storedEventName = localStorage.getItem('eventName')
+    if (typeof window !== 'undefined') {
+      const storedLink = localStorage.getItem('whatsappLink')
+      const storedEventName = localStorage.getItem('eventName')
 
-    if (storedLink) {
-      setWhatsappLink(storedLink)
-    }
+      if (storedLink) {
+        setWhatsappLink(storedLink)
+      }
 
-    if (storedEventName) {
-      setEventName(storedEventName)
+      if (storedEventName) {
+        setEventName(storedEventName)
+      }
     }
   }, [])
 

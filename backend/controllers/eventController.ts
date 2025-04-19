@@ -5,6 +5,10 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 import { extractTextFromPDF } from "../utils/pdfExtractor";
+import * as inMemoryStore from "../utils/inMemoryStore";
+
+// Flag to determine if we're using MongoDB or in-memory store
+const useMongoDb = process.env.MONGO_URI ? true : false;
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -33,7 +37,7 @@ export const upload = multer({
 });
 
 // Create a new event
-export const createEvent = async (req: Request, res: Response) => {
+export const createEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, organizer, details, time, whatsappNumber } = req.body;
 
@@ -42,18 +46,32 @@ export const createEvent = async (req: Request, res: Response) => {
     const encodedMessage = encodeURIComponent(message);
     const link = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-    // Create event object
-    const event = new Event({
-      name,
-      organizer,
-      details,
-      time,
-      whatsappNumber,
-      whatsappMessage: link,
-    });
+    if (useMongoDb) {
+      // Create event object in MongoDB
+      const event = new Event({
+        name,
+        organizer,
+        details,
+        time,
+        whatsappNumber,
+        whatsappMessage: link,
+      });
 
-    await event.save();
-    res.status(201).json({ success: true, link });
+      await event.save();
+      res.status(201).json({ success: true, link });
+    } else {
+      // Use in-memory store
+      const event = inMemoryStore.createEvent({
+        name,
+        organizer,
+        details,
+        time,
+        whatsappNumber,
+        whatsappMessage: link,
+      });
+
+      res.status(201).json({ success: true, link, event });
+    }
   } catch (err) {
     console.error("Event creation failed:", err);
     res.status(500).json({ error: "Event creation failed" });
@@ -61,10 +79,11 @@ export const createEvent = async (req: Request, res: Response) => {
 };
 
 // Upload PDF and extract text
-export const uploadEventPDF = async (req: Request, res: Response) => {
+export const uploadEventPDF = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: "No PDF file uploaded" });
+      res.status(400).json({ error: "No PDF file uploaded" });
+      return;
     }
 
     const { eventId } = req.params;
@@ -73,27 +92,49 @@ export const uploadEventPDF = async (req: Request, res: Response) => {
     // Extract text from PDF
     const extractedText = await extractTextFromPDF(pdfPath);
 
-    // Update event with PDF context
-    const event = await Event.findByIdAndUpdate(
-      eventId,
-      {
+    if (useMongoDb) {
+      // Update event with PDF context in MongoDB
+      const event = await Event.findByIdAndUpdate(
+        eventId,
+        {
+          context: extractedText,
+          pdfPath: pdfPath,
+        },
+        { new: true }
+      );
+
+      if (!event) {
+        // Clean up the file if event not found
+        fs.unlinkSync(pdfPath);
+        res.status(404).json({ error: "Event not found" });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "PDF uploaded and processed successfully",
+        event,
+      });
+    } else {
+      // Use in-memory store
+      const event = inMemoryStore.updateEvent(eventId, {
         context: extractedText,
         pdfPath: pdfPath,
-      },
-      { new: true }
-    );
+      });
 
-    if (!event) {
-      // Clean up the file if event not found
-      fs.unlinkSync(pdfPath);
-      return res.status(404).json({ error: "Event not found" });
+      if (!event) {
+        // Clean up the file if event not found
+        fs.unlinkSync(pdfPath);
+        res.status(404).json({ error: "Event not found" });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "PDF uploaded and processed successfully",
+        event,
+      });
     }
-
-    res.status(200).json({
-      success: true,
-      message: "PDF uploaded and processed successfully",
-      event,
-    });
   } catch (err) {
     console.error("PDF upload failed:", err);
     // Clean up the file if there's an error
@@ -105,10 +146,16 @@ export const uploadEventPDF = async (req: Request, res: Response) => {
 };
 
 // Get all events
-export const getAllEvents = async (req: Request, res: Response) => {
+export const getAllEvents = async (req: Request, res: Response): Promise<void> => {
   try {
-    const events = await Event.find();
-    res.status(200).json(events);
+    if (useMongoDb) {
+      const events = await Event.find();
+      res.status(200).json(events);
+    } else {
+      // Use in-memory store
+      const events = inMemoryStore.getAllEvents();
+      res.status(200).json(events);
+    }
   } catch (err) {
     console.error("Error fetching events:", err);
     res.status(500).json({ error: "Failed to fetch events" });
@@ -116,7 +163,7 @@ export const getAllEvents = async (req: Request, res: Response) => {
 };
 
 // Create event with PDF upload in one step
-export const createEventWithPDF = async (req: Request, res: Response) => {
+export const createEventWithPDF = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, organizer, details, time, whatsappNumber } = req.body;
 
@@ -134,25 +181,45 @@ export const createEventWithPDF = async (req: Request, res: Response) => {
       context = await extractTextFromPDF(pdfPath);
     }
 
-    // Create event object
-    const event = new Event({
-      name,
-      organizer,
-      details,
-      time,
-      whatsappNumber,
-      whatsappMessage: link,
-      context,
-      pdfPath,
-    });
+    if (useMongoDb) {
+      // Create event object in MongoDB
+      const event = new Event({
+        name,
+        organizer,
+        details,
+        time,
+        whatsappNumber,
+        whatsappMessage: link,
+        context,
+        pdfPath,
+      });
 
-    await event.save();
+      await event.save();
 
-    res.status(201).json({
-      success: true,
-      link,
-      event,
-    });
+      res.status(201).json({
+        success: true,
+        link,
+        event,
+      });
+    } else {
+      // Use in-memory store
+      const event = inMemoryStore.createEvent({
+        name,
+        organizer,
+        details,
+        time,
+        whatsappNumber,
+        whatsappMessage: link,
+        context,
+        pdfPath,
+      });
+
+      res.status(201).json({
+        success: true,
+        link,
+        event,
+      });
+    }
   } catch (err) {
     console.error("Event creation with PDF failed:", err);
     // Clean up the file if there's an error
