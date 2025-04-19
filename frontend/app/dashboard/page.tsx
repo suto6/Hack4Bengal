@@ -2,28 +2,52 @@
 
 import { Textarea } from "@/components/ui/textarea"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Search, UserPlus } from "lucide-react"
+import { Download, Search, UserPlus, Loader2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-
-// Mock data for demonstration
-const mockAttendees = [
-  { id: 1, name: "John Doe", email: "john@example.com", ticketId: "TKT-001", status: "Confirmed" },
-  { id: 2, name: "Jane Smith", email: "jane@example.com", ticketId: "TKT-002", status: "Pending" },
-  { id: 3, name: "Robert Johnson", email: "robert@example.com", ticketId: "TKT-003", status: "Confirmed" },
-  { id: 4, name: "Emily Davis", email: "emily@example.com", ticketId: "TKT-004", status: "Cancelled" },
-  { id: 5, name: "Michael Wilson", email: "michael@example.com", ticketId: "TKT-005", status: "Confirmed" },
-]
+import { getEvents, Event } from "@/lib/api/eventService"
 
 export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  // Removed unused state variable 'showAttendees'
+  const [events, setEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true)
+        const eventsData = await getEvents()
+        setEvents(eventsData)
+
+        // Select the first event by default if available
+        if (eventsData.length > 0) {
+          setSelectedEvent(eventsData[0])
+        }
+      } catch (err) {
+        console.error('Error fetching events:', err)
+        setError('Failed to load events. Please try again later.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchEvents()
+  }, [])
+
+  // Mock attendees for demonstration - in a real app, this would come from the backend
+  const mockAttendees = [
+    { id: 1, name: "John Doe", email: "john@example.com", ticketId: "TKT-001", status: "Confirmed" },
+    { id: 2, name: "Jane Smith", email: "jane@example.com", ticketId: "TKT-002", status: "Pending" },
+    { id: 3, name: "Robert Johnson", email: "robert@example.com", ticketId: "TKT-003", status: "Confirmed" },
+  ]
 
   const filteredAttendees = mockAttendees.filter(
     (attendee) =>
@@ -34,12 +58,32 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Your Event Dashboard</h1>
-          <p className="text-muted-foreground">Tech Conference 2023</p>
+      {loading ? (
+        <div className="flex h-[200px] w-full items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading events...</span>
         </div>
-        <div className="flex gap-2">
+      ) : error ? (
+        <div className="flex h-[200px] w-full items-center justify-center">
+          <div className="text-center">
+            <p className="text-destructive">{error}</p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+      ) : events.length === 0 ? (
+        <div className="flex h-[200px] w-full flex-col items-center justify-center rounded-md border border-dashed p-8 text-center">
+          <h2 className="text-xl font-semibold">No events found</h2>
+          <p className="mt-2 text-muted-foreground">Create your first event to get started</p>
+          <Button className="mt-4" onClick={() => window.location.href = '/create'}>Create Event</Button>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Your Event Dashboard</h1>
+              <p className="text-muted-foreground">{selectedEvent?.name || 'Select an event'}</p>
+            </div>
+            <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
             Export
@@ -48,17 +92,36 @@ export default function DashboardPage() {
             <UserPlus className="h-4 w-4" />
             Add Attendee
           </Button>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className="grid gap-8 md:grid-cols-3">
+          {events.length > 1 && (
+            <div className="mb-6">
+              <Label htmlFor="eventSelect">Select Event</Label>
+              <select
+                id="eventSelect"
+                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2"
+                value={selectedEvent?._id || ''}
+                onChange={(e) => {
+                  const selected = events.find(event => event._id === e.target.value)
+                  if (selected) setSelectedEvent(selected)
+                }}
+              >
+                {events.map(event => (
+                  <option key={event._id} value={event._id}>{event.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="grid gap-8 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Registrations</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockAttendees.length}</div>
-            <p className="text-xs text-muted-foreground">+2 from yesterday</p>
+            <p className="text-xs text-muted-foreground">Total registrations for this event</p>
           </CardContent>
         </Card>
         <Card>
@@ -68,8 +131,9 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{mockAttendees.filter((a) => a.status === "Confirmed").length}</div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((mockAttendees.filter((a) => a.status === "Confirmed").length / mockAttendees.length) * 100)}%
-              of total
+              {mockAttendees.length > 0 ?
+                `${Math.round((mockAttendees.filter((a) => a.status === "Confirmed").length / mockAttendees.length) * 100)}% of total` :
+                'No registrations yet'}
             </p>
           </CardContent>
         </Card>
@@ -171,22 +235,49 @@ export default function DashboardPage() {
               <CardDescription>Manage your event details and configuration</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="eventName">Event Name</Label>
-                <Input id="eventName" defaultValue="Tech Conference 2023" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="eventDate">Event Date</Label>
-                <Input id="eventDate" defaultValue="October 15, 2023" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="eventDescription">Event Description</Label>
-                <Textarea
-                  id="eventDescription"
-                  defaultValue="Join us for a day of tech talks and networking opportunities."
-                  className="min-h-[100px]"
-                />
-              </div>
+              {selectedEvent ? (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="eventName">Event Name</Label>
+                    <Input id="eventName" defaultValue={selectedEvent.name} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="eventDate">Event Date</Label>
+                    <Input id="eventDate" defaultValue={selectedEvent.time} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="eventDescription">Event Description</Label>
+                    <Textarea
+                      id="eventDescription"
+                      defaultValue={selectedEvent.details}
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="whatsappNumber">WhatsApp Number</Label>
+                    <Input id="whatsappNumber" defaultValue={selectedEvent.whatsappNumber} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="whatsappLink">WhatsApp Link</Label>
+                    <div className="flex gap-2">
+                      <Input id="whatsappLink" defaultValue={selectedEvent.whatsappMessage} readOnly />
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedEvent.whatsappMessage)
+                          alert('Link copied to clipboard!')
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4">
+                  <p>No event selected</p>
+                </div>
+              )}
               <div className="flex justify-end">
                 <Button>Save Changes</Button>
               </div>
@@ -194,6 +285,8 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
       </Tabs>
+        </>
+      )}
     </div>
   )
 }

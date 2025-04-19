@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, MessageSquare, Calendar, Users } from "lucide-react"
+import { ConnectionTest } from "@/components/ConnectionTest"
 
 export default function LandingPage() {
   return (
@@ -29,6 +30,11 @@ export default function LandingPage() {
         <div className="flex h-64 w-64 items-center justify-center rounded-full bg-primary/10 p-6 md:h-80 md:w-80">
           <MessageSquare className="h-32 w-32 text-primary md:h-40 md:w-40" />
         </div>
+      </section>
+
+      {/* Connection Test */}
+      <section className="mx-auto max-w-2xl">
+        <ConnectionTest />
       </section>
 
       {/* Features Section */}

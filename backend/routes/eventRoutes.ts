@@ -1,8 +1,11 @@
 // routes/eventRoutes.ts
 import express from "express";
-import { createEvent, uploadEventPDF, createEventWithPDF, upload } from "../controllers/eventController";
+import { createEvent, uploadEventPDF, createEventWithPDF, getAllEvents, upload } from "../controllers/eventController";
 
 const router = express.Router();
+
+// Get all events
+router.get("/", getAllEvents);
 
 // Create a new event (without PDF)
 router.post("/create", createEvent);

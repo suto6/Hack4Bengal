@@ -104,6 +104,17 @@ export const uploadEventPDF = async (req: Request, res: Response) => {
   }
 };
 
+// Get all events
+export const getAllEvents = async (req: Request, res: Response) => {
+  try {
+    const events = await Event.find();
+    res.status(200).json(events);
+  } catch (err) {
+    console.error("Error fetching events:", err);
+    res.status(500).json({ error: "Failed to fetch events" });
+  }
+};
+
 // Create event with PDF upload in one step
 export const createEventWithPDF = async (req: Request, res: Response) => {
   try {
