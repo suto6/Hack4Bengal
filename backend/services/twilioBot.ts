@@ -1,12 +1,8 @@
 // services/twilioBot.ts
 import twilio from 'twilio';
 import dotenv from 'dotenv';
-import { Event } from '../models/Event';
 import { generateResponseFromContext } from '../llm/openai';
-import * as inMemoryStore from '../utils/inMemoryStore';
-
-// Flag to determine if we're using MongoDB or in-memory store
-const useMongoDb = process.env.MONGO_URI ? true : false;
+import prisma from './prismaService';
 
 dotenv.config();
 
@@ -95,28 +91,25 @@ const findEventByNameOrNumber = async (
   // Remove 'whatsapp:' prefix if present
   const cleanNumber = phoneNumber.replace('whatsapp:', '');
 
-  if (useMongoDb) {
-    // Try to find by event name first in MongoDB
-    if (eventName) {
-      const event = await Event.findOne({
-        name: { $regex: new RegExp(eventName, 'i') }
-      });
+  // Try to find by event name first
+  if (eventName) {
+    const events = await prisma.event.findMany({
+      where: {
+        name: {
+          contains: eventName
+        }
+      }
+    });
 
-      if (event) return event;
-    }
-
-    // If not found by name, try to find by WhatsApp number in MongoDB
-    return await Event.findOne({ whatsappNumber: cleanNumber });
-  } else {
-    // Use in-memory store
-    // Try to find by event name first
-    if (eventName) {
-      const events = inMemoryStore.findEventsByName(eventName);
-      if (events.length > 0) return events[0];
-    }
-
-    // If not found by name, try to find by WhatsApp number
-    const events = inMemoryStore.findEventsByWhatsAppNumber(cleanNumber);
-    return events.length > 0 ? events[0] : null;
+    if (events.length > 0) return events[0];
   }
+
+  // If not found by name, try to find by WhatsApp number
+  const events = await prisma.event.findMany({
+    where: {
+      whatsappNumber: cleanNumber
+    }
+  });
+
+  return events.length > 0 ? events[0] : null;
 };

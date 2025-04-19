@@ -1,14 +1,10 @@
 // controllers/eventController.ts
 import { Request, Response } from "express";
-import { Event } from "../models/Event";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
 import { extractTextFromPDF } from "../utils/pdfExtractor";
-import * as inMemoryStore from "../utils/inMemoryStore";
-
-// Flag to determine if we're using MongoDB or in-memory store
-const useMongoDb = process.env.MONGO_URI ? true : false;
+import prisma from "../services/prismaService";
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -46,32 +42,19 @@ export const createEvent = async (req: Request, res: Response): Promise<void> =>
     const encodedMessage = encodeURIComponent(message);
     const link = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-    if (useMongoDb) {
-      // Create event object in MongoDB
-      const event = new Event({
+    // Create event using Prisma
+    const event = await prisma.event.create({
+      data: {
         name,
         organizer,
         details,
         time,
         whatsappNumber,
         whatsappMessage: link,
-      });
+      },
+    });
 
-      await event.save();
-      res.status(201).json({ success: true, link });
-    } else {
-      // Use in-memory store
-      const event = inMemoryStore.createEvent({
-        name,
-        organizer,
-        details,
-        time,
-        whatsappNumber,
-        whatsappMessage: link,
-      });
-
-      res.status(201).json({ success: true, link, event });
-    }
+    res.status(201).json({ success: true, link, event });
   } catch (err) {
     console.error("Event creation failed:", err);
     res.status(500).json({ error: "Event creation failed" });
@@ -92,48 +75,26 @@ export const uploadEventPDF = async (req: Request, res: Response): Promise<void>
     // Extract text from PDF
     const extractedText = await extractTextFromPDF(pdfPath);
 
-    if (useMongoDb) {
-      // Update event with PDF context in MongoDB
-      const event = await Event.findByIdAndUpdate(
-        eventId,
-        {
+    // Update event with PDF context using Prisma
+    try {
+      const event = await prisma.event.update({
+        where: { id: eventId },
+        data: {
           context: extractedText,
           pdfPath: pdfPath,
         },
-        { new: true }
-      );
-
-      if (!event) {
-        // Clean up the file if event not found
-        fs.unlinkSync(pdfPath);
-        res.status(404).json({ error: "Event not found" });
-        return;
-      }
+      });
 
       res.status(200).json({
         success: true,
         message: "PDF uploaded and processed successfully",
         event,
       });
-    } else {
-      // Use in-memory store
-      const event = inMemoryStore.updateEvent(eventId, {
-        context: extractedText,
-        pdfPath: pdfPath,
-      });
-
-      if (!event) {
-        // Clean up the file if event not found
-        fs.unlinkSync(pdfPath);
-        res.status(404).json({ error: "Event not found" });
-        return;
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "PDF uploaded and processed successfully",
-        event,
-      });
+    } catch (error) {
+      // Clean up the file if event not found
+      fs.unlinkSync(pdfPath);
+      res.status(404).json({ error: "Event not found" });
+      return;
     }
   } catch (err) {
     console.error("PDF upload failed:", err);
@@ -148,14 +109,8 @@ export const uploadEventPDF = async (req: Request, res: Response): Promise<void>
 // Get all events
 export const getAllEvents = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (useMongoDb) {
-      const events = await Event.find();
-      res.status(200).json(events);
-    } else {
-      // Use in-memory store
-      const events = inMemoryStore.getAllEvents();
-      res.status(200).json(events);
-    }
+    const events = await prisma.event.findMany();
+    res.status(200).json(events);
   } catch (err) {
     console.error("Error fetching events:", err);
     res.status(500).json({ error: "Failed to fetch events" });
@@ -181,9 +136,9 @@ export const createEventWithPDF = async (req: Request, res: Response): Promise<v
       context = await extractTextFromPDF(pdfPath);
     }
 
-    if (useMongoDb) {
-      // Create event object in MongoDB
-      const event = new Event({
+    // Create event using Prisma
+    const event = await prisma.event.create({
+      data: {
         name,
         organizer,
         details,
@@ -192,34 +147,14 @@ export const createEventWithPDF = async (req: Request, res: Response): Promise<v
         whatsappMessage: link,
         context,
         pdfPath,
-      });
+      },
+    });
 
-      await event.save();
-
-      res.status(201).json({
-        success: true,
-        link,
-        event,
-      });
-    } else {
-      // Use in-memory store
-      const event = inMemoryStore.createEvent({
-        name,
-        organizer,
-        details,
-        time,
-        whatsappNumber,
-        whatsappMessage: link,
-        context,
-        pdfPath,
-      });
-
-      res.status(201).json({
-        success: true,
-        link,
-        event,
-      });
-    }
+    res.status(201).json({
+      success: true,
+      link,
+      event,
+    });
   } catch (err) {
     console.error("Event creation with PDF failed:", err);
     // Clean up the file if there's an error
