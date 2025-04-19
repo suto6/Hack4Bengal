@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,24 @@ import { Input } from "@/components/ui/input"
 
 export default function SuccessPage() {
   const [copied, setCopied] = useState(false)
-  const whatsappLink = "https://wa.me/123456789?text=I'm%20interested%20in%20your%20event"
+  const [whatsappLink, setWhatsappLink] = useState("")
+  const [eventName, setEventName] = useState("")
+
+  useEffect(() => {
+    // Get the WhatsApp link from localStorage
+    if (typeof window !== 'undefined') {
+      const storedLink = localStorage.getItem('whatsappLink')
+      const storedEventName = localStorage.getItem('eventName')
+
+      if (storedLink) {
+        setWhatsappLink(storedLink)
+      }
+
+      if (storedEventName) {
+        setEventName(storedEventName)
+      }
+    }
+  }, [])
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(whatsappLink)
@@ -25,7 +42,9 @@ export default function SuccessPage() {
             <Check className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Your event has been created!</CardTitle>
-          <CardDescription>Share this WhatsApp link with your attendees</CardDescription>
+          <CardDescription>
+            {eventName ? `Share the WhatsApp link for "${eventName}" with your attendees` : 'Share this WhatsApp link with your attendees'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
