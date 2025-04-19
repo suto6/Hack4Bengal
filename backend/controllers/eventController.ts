@@ -3,8 +3,15 @@ import { Request, Response } from "express";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
+import dotenv from "dotenv";
 import { extractTextFromPDF } from "../utils/pdfExtractor";
 import prisma from "../services/prismaService";
+
+// Load environment variables
+dotenv.config();
+
+// Get Twilio phone number from environment variables
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER || '';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -37,10 +44,11 @@ export const createEvent = async (req: Request, res: Response): Promise<void> =>
   try {
     const { name, organizer, details, time, whatsappNumber } = req.body;
 
-    // Generate WhatsApp message link
+    // Generate WhatsApp message link using Twilio phone number
     const message = `Hey! I saw your event "${name}" happening at ${time}. I'd love to know more!`;
     const encodedMessage = encodeURIComponent(message);
-    const link = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    // Use Twilio phone number instead of organizer's number
+    const link = `https://wa.me/${TWILIO_PHONE_NUMBER.replace('+', '')}?text=${encodedMessage}`;
 
     // Create event using Prisma
     const event = await prisma.event.create({
@@ -122,10 +130,11 @@ export const createEventWithPDF = async (req: Request, res: Response): Promise<v
   try {
     const { name, organizer, details, time, whatsappNumber } = req.body;
 
-    // Generate WhatsApp message link
+    // Generate WhatsApp message link using Twilio phone number
     const message = `Hey! I saw your event "${name}" happening at ${time}. I'd love to know more!`;
     const encodedMessage = encodeURIComponent(message);
-    const link = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    // Use Twilio phone number instead of organizer's number
+    const link = `https://wa.me/${TWILIO_PHONE_NUMBER.replace('+', '')}?text=${encodedMessage}`;
 
     let context = details;
     let pdfPath = "";

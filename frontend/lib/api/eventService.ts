@@ -28,7 +28,7 @@ export interface EventResponse {
   success: boolean;
   link: string;
   event?: {
-    _id: string;
+    id: string;
     name: string;
     organizer: string;
     details: string;
@@ -37,13 +37,15 @@ export interface EventResponse {
     whatsappMessage: string;
     context?: string;
     pdfPath?: string;
+    createdAt?: string;
+    updatedAt?: string;
   };
   error?: string;
 }
 
 // Interface for event list
 export interface Event {
-  _id: string;
+  id: string;
   name: string;
   organizer: string;
   details: string;
@@ -52,6 +54,8 @@ export interface Event {
   whatsappMessage: string;
   context?: string;
   pdfPath?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -79,17 +83,19 @@ export const createEventWithPDF = async (eventData: EventData): Promise<EventRes
     if (process.env.NODE_ENV === 'development' && typeof navigator !== 'undefined' && !navigator.onLine) {
       console.log('Backend not available, using mock data');
       // Return mock data for testing
+      // Use a mock Twilio number for testing
+      const mockTwilioNumber = '15716011328'; // Without the + sign
       return {
         success: true,
-        link: `https://wa.me/1234567890?text=Hi%20about%20${encodeURIComponent(eventData.name)}`,
+        link: `https://wa.me/${mockTwilioNumber}?text=Hi%20about%20${encodeURIComponent(eventData.name)}`,
         event: {
-          _id: 'mock-id',
+          id: 'mock-id',
           name: eventData.name,
           organizer: eventData.organizer,
           details: eventData.details,
           time: eventData.time,
           whatsappNumber: eventData.whatsappNumber,
-          whatsappMessage: `https://wa.me/1234567890?text=Hi%20about%20${encodeURIComponent(eventData.name)}`,
+          whatsappMessage: `https://wa.me/${mockTwilioNumber}?text=Hi%20about%20${encodeURIComponent(eventData.name)}`,
           context: eventData.details,
         }
       };

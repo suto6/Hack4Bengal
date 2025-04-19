@@ -27,6 +27,14 @@ export default function CreateEventPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string>('')
 
+  // Form field states
+  const [eventName, setEventName] = useState<string>('')
+  const [organizerName, setOrganizerName] = useState<string>('')
+  const [organizerEmail, setOrganizerEmail] = useState<string>('')
+  const [organizerPhone, setOrganizerPhone] = useState<string>('')
+  const [eventDescription, setEventDescription] = useState<string>('')
+  const [eventFaqs, setEventFaqs] = useState<string>('')
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
@@ -41,13 +49,14 @@ export default function CreateEventPage() {
     setError('')
 
     try {
-      const formElement = e.currentTarget
-      const formData = new FormData(formElement)
-
-      const eventName = formElement.eventName.value
-      const organizerName = formElement.organizerName.value
-      const eventDescription = formElement.eventDescription.value
-      const organizerPhone = formElement.organizerPhone.value
+      // Create form data manually
+      const formData = new FormData()
+      formData.append('eventName', eventName)
+      formData.append('organizerName', organizerName)
+      formData.append('organizerEmail', organizerEmail)
+      formData.append('organizerPhone', organizerPhone)
+      formData.append('eventDescription', eventDescription)
+      formData.append('eventFaqs', eventFaqs)
 
       // Format date and time
       let timeString = ''
@@ -102,22 +111,48 @@ export default function CreateEventPage() {
             <div className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="eventName">Event Name</Label>
-                <Input id="eventName" placeholder="Tech Conference 2023" required />
+                <Input
+                  id="eventName"
+                  placeholder="Tech Conference 2023"
+                  required
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="organizerName">Organizer Name</Label>
-                <Input id="organizerName" placeholder="Your name or organization" required />
+                <Input
+                  id="organizerName"
+                  placeholder="Your name or organization"
+                  required
+                  value={organizerName}
+                  onChange={(e) => setOrganizerName(e.target.value)}
+                />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="organizerEmail">Organizer Email</Label>
-                <Input id="organizerEmail" type="email" placeholder="you@example.com" required />
+                <Input
+                  id="organizerEmail"
+                  type="email"
+                  placeholder="you@example.com"
+                  required
+                  value={organizerEmail}
+                  onChange={(e) => setOrganizerEmail(e.target.value)}
+                />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="organizerPhone">WhatsApp Number</Label>
-                <Input id="organizerPhone" type="tel" placeholder="+1 (555) 123-4567" required />
+                <Input
+                  id="organizerPhone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  required
+                  value={organizerPhone}
+                  onChange={(e) => setOrganizerPhone(e.target.value)}
+                />
                 <p className="text-xs text-muted-foreground">This number will receive WhatsApp messages from attendees</p>
               </div>
 
@@ -183,12 +218,20 @@ export default function CreateEventPage() {
                   placeholder="Describe your event..."
                   className="min-h-[100px]"
                   required
+                  value={eventDescription}
+                  onChange={(e) => setEventDescription(e.target.value)}
                 />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="eventFaqs">FAQs / Extra Info</Label>
-                <Textarea id="eventFaqs" placeholder="Additional information, FAQs, etc." className="min-h-[100px]" />
+                <Textarea
+                  id="eventFaqs"
+                  placeholder="Additional information, FAQs, etc."
+                  className="min-h-[100px]"
+                  value={eventFaqs}
+                  onChange={(e) => setEventFaqs(e.target.value)}
+                />
               </div>
 
               <div className="grid gap-2">
