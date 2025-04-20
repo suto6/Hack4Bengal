@@ -7,6 +7,9 @@ import { Header } from "../components/header"
 
 const inter = Inter({ subsets: ["latin"] })
 
+export const metadata = {
+  title: "whatsEvent",
+}
 export default function RootLayout({
   children,
 }: {
