@@ -10,9 +10,11 @@ export default function LandingPage() {
       <section className="flex flex-col-reverse items-center gap-8 md:flex-row md:justify-between">
         <div className="flex flex-col gap-6 md:max-w-[50%]">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            Welcome to <span className="text-primary">TicketzBot</span>
+            Welcome to <span className="text-primary">whatsEvent</span>
           </h1>
-          <p className="text-xl text-muted-foreground">Create an AI-powered event assistant for your attendees</p>
+          <p className="text-2xl text-muted-foreground">Your Smart Assistant for Every Event</p>
+          <p className="text-xl text-muted-foreground">🤖 Let Your Event Speak for Itself.</p>
+
           <div className="flex gap-4">
             <Link href="/simple-create">
               <Button size="lg" className="gap-2">
