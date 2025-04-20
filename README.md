@@ -1,4 +1,4 @@
-# LLM Event Assistant
+# Whatzevent
 
 A complete, functional, smooth-working LLM-powered chatbot application that allows event organizers to create events and attendees to ask questions about those events.
 
