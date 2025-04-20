@@ -22,7 +22,6 @@ graph LR
 ### Prerequisites
 - Node.js 18+
 - OpenAI API key
-- PostgreSQL/Supabase
 
 ```bash
 git clone https://github.com/suto6/WhatsEvent.git
