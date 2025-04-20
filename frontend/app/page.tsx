@@ -21,7 +21,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
-            <Link href="/simple-create">
+            <Link href="/create">
               <Button size="lg" className="gap-2 text-md px-8 py-6 hover:shadow-lg transition-all">
                 Create Free Event Bot
                 <ArrowRight className="h-4 w-4" />
@@ -65,7 +65,7 @@ export default function LandingPage() {
             </li>
             <li className="flex items-start gap-3">
               <div className="mt-1 h-2 w-2 rounded-full bg-primary"></div>
-              <span>Works on <span className="font-semibold">any platform</span> - websites, social media, emails</span>
+              <span> <span className="font-semibold">Easy to Share </span> — One link for everything your attendees need to know.</span>
             </li>
           </ul>
         </div>
@@ -134,7 +134,7 @@ export default function LandingPage() {
           Join hundreds of organizers saving hours every week with automated attendee support.
         </p>
         <div className="flex justify-center gap-4">
-          <Link href="/simple-create">
+          <Link href="/create">
             <Button size="lg" className="gap-2 text-md px-8 py-6 hover:shadow-lg transition-all">
               Get Started Free
               <ArrowRight className="h-4 w-4" />
