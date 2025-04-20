@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, MessageSquare, Bot, Calendar, Users, Sparkles } from "lucide-react"
+// import { ConnectionTest } from "@/components/ConnectionTest"
 
 export default function LandingPage() {
   return (
@@ -141,6 +142,7 @@ export default function LandingPage() {
           </Link>
         </div>
       </section>
+      {/* <ConnectionTest /> */}
     </div>
   )
 }

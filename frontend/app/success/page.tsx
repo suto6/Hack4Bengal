@@ -62,9 +62,9 @@ export default function SuccessPage() {
         <CardFooter className="flex flex-col gap-4">
           <div className="p-4 border rounded-md bg-blue-50 text-left">
             <h3 className="font-semibold mb-2">Share this link with your attendees:</h3>
-            <p className="text-sm">
+            {/* <p className="text-sm">
               Your event chat is now live! Share this link with attendees so they can ask questions about your event.
-            </p>
+            </p> */}
             <p className="text-sm font-medium mt-2">
               {typeof window !== 'undefined' ? window.location.origin + chatLink : chatLink}
             </p>
