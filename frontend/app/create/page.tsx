@@ -8,48 +8,30 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { CalendarIcon, Clock, FileText, Upload, Globe } from "lucide-react"
+import { CalendarIcon, Clock, FileText, Upload } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function CreateEventPage() {
   const router = useRouter()
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
-  const [timeFormat, setTimeFormat] = useState<{
-    startHour: string,
-    startMinute: string,
-    startPeriod: "AM" | "PM",
-    endHour: string,
-    endMinute: string,
-    endPeriod: "AM" | "PM"
-  }>({
-    startHour: "",
-    startMinute: "",
-    startPeriod: "AM",
-    endHour: "",
-    endMinute: "",
-    endPeriod: "PM"
-  })
-  const [timezone, setTimezone] = useState("UTC")
+  const [startTime, setStartTime] = useState<{hours: string, minutes: string}>({hours: "", minutes: ""})
+  const [endTime, setEndTime] = useState<{hours: string, minutes: string}>({hours: "", minutes: ""})
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [processingStatus, setProcessingStatus] = useState<string>("")
 
-  const handleTimeChange = (field: keyof typeof timeFormat, value: string | "AM" | "PM") => {
-    setTimeFormat(prev => ({ ...prev, [field]: value }))
+  const handleStartTimeChange = (field: 'hours' | 'minutes', value: string) => {
+    setStartTime(prev => ({ ...prev, [field]: value }))
   }
 
-  const formatTimeDisplay = (hour: string, minute: string, period: "AM" | "PM") => {
-    if (!hour && !minute) return "Select time";
-    const formattedHour = hour.padStart(2, '0');
-    const formattedMinute = minute.padStart(2, '0');
-    return `${formattedHour}:${formattedMinute} ${period}`;
+  const handleEndTimeChange = (field: 'hours' | 'minutes', value: string) => {
+    setEndTime(prev => ({ ...prev, [field]: value }))
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,12 +87,6 @@ export default function CreateEventPage() {
     router.push("/success")
   }
 
-  // Common timezones for the dropdown
-  const timezones = [
-    "UTC", "GMT", "EST", "CST", "MST", "PST", "EDT", "CDT", "MDT", "PDT", 
-    "Europe/London", "Europe/Paris", "Asia/Tokyo", "Australia/Sydney", "Pacific/Auckland"
-  ]
-
   return (
     <div className="mx-auto max-w-3xl">
       <Card>
@@ -141,207 +117,134 @@ export default function CreateEventPage() {
                 <Input id="organizerPhone" type="tel" placeholder="+1 (555) 123-4567" />
               </div>
 
-              {/* Date Range Section */}
-              <div className="grid gap-2">
-                <Label>Event Date Range</Label>
-                <div className="flex gap-2 items-center">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn("flex-1 justify-start text-left font-normal", !startDate && "text-muted-foreground")}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, "MMM d, yyyy") : "Start date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <span className="text-gray-500">—</span>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn("flex-1 justify-start text-left font-normal", !endDate && "text-muted-foreground")}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, "MMM d, yyyy") : "End date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+              {/* Date and Time Selection Section - Updated with start/end times */}
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Start Date & Time Column */}
+                  <div className="space-y-2">
+                    <Label>Start Date & Time</Label>
+                    <div className="flex flex-col gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? format(startDate, "PPP") : "Select start date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                        </PopoverContent>
+                      </Popover>
 
-              {/* Time Range Section */}
-              <div className="grid gap-2">
-                <Label>Event Time Range</Label>
-                <div className="flex gap-2 items-center">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className={cn("flex-1 justify-start text-left font-normal", !startDate && "text-muted-foreground")}
-                        disabled={!startDate}
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        {formatTimeDisplay(timeFormat.startHour, timeFormat.startMinute, timeFormat.startPeriod)}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-4">
-                      <div className="grid gap-4">
-                        <div className="flex gap-2 items-center">
-                          <div>
-                            <Label htmlFor="startHour">Hour</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className={cn("w-full justify-start text-left font-normal", (!startDate || (!startTime.hours && !startTime.minutes)) && "text-muted-foreground")}
+                            disabled={!startDate}
+                          >
+                            <Clock className="mr-2 h-4 w-4" />
+                            {startTime.hours || startTime.minutes ? 
+                              `${startTime.hours.padStart(2, '0')}:${startTime.minutes.padStart(2, '0')}` : 
+                              "Select start time"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="startHours">Hours</Label>
                             <Input 
-                              id="startHour" 
+                              id="startHours" 
                               type="number" 
-                              min="1" 
-                              max="12" 
+                              min="0" 
+                              max="23" 
                               placeholder="HH" 
-                              className="w-16"
-                              value={timeFormat.startHour}
-                              onChange={(e) => handleTimeChange('startHour', e.target.value)}
+                              className="w-[80px]"
+                              value={startTime.hours}
+                              onChange={(e) => handleStartTimeChange('hours', e.target.value)}
                             />
-                          </div>
-                          <div>
-                            <Label htmlFor="startMinute">Min</Label>
+                            <Label htmlFor="startMinutes">Minutes</Label>
                             <Input 
-                              id="startMinute" 
+                              id="startMinutes" 
                               type="number" 
                               min="0" 
                               max="59" 
                               placeholder="MM" 
-                              className="w-16"
-                              value={timeFormat.startMinute}
-                              onChange={(e) => handleTimeChange('startMinute', e.target.value)}
+                              className="w-[80px]"
+                              value={startTime.minutes}
+                              onChange={(e) => handleStartTimeChange('minutes', e.target.value)}
                             />
                           </div>
-                          <div>
-                            <Label>Period</Label>
-                            <div className="flex mt-2">
-                              <Button 
-                                type="button"
-                                variant={timeFormat.startPeriod === "AM" ? "default" : "outline"}
-                                size="sm"
-                                className="rounded-r-none w-12"
-                                onClick={() => handleTimeChange('startPeriod', "AM")}
-                              >
-                                AM
-                              </Button>
-                              <Button 
-                                type="button"
-                                variant={timeFormat.startPeriod === "PM" ? "default" : "outline"}
-                                size="sm"
-                                className="rounded-l-none w-12"
-                                onClick={() => handleTimeChange('startPeriod', "PM")}
-                              >
-                                PM
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <span className="text-gray-500">—</span>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className={cn("flex-1 justify-start text-left font-normal", !endDate && "text-muted-foreground")}
-                        disabled={!endDate}
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        {formatTimeDisplay(timeFormat.endHour, timeFormat.endMinute, timeFormat.endPeriod)}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-4">
-                      <div className="grid gap-4">
-                        <div className="flex gap-2 items-center">
-                          <div>
-                            <Label htmlFor="endHour">Hour</Label>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  {/* End Date & Time Column */}
+                  <div className="space-y-2">
+                    <Label>End Date & Time</Label>
+                    <div className="flex flex-col gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? format(endDate, "PPP") : "Select end date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
+                        </PopoverContent>
+                      </Popover>
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className={cn("w-full justify-start text-left font-normal", (!endDate || (!endTime.hours && !endTime.minutes)) && "text-muted-foreground")}
+                            disabled={!endDate}
+                          >
+                            <Clock className="mr-2 h-4 w-4" />
+                            {endTime.hours || endTime.minutes ? 
+                              `${endTime.hours.padStart(2, '0')}:${endTime.minutes.padStart(2, '0')}` : 
+                              "Select end time"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="endHours">Hours</Label>
                             <Input 
-                              id="endHour" 
+                              id="endHours" 
                               type="number" 
-                              min="1" 
-                              max="12" 
+                              min="0" 
+                              max="23" 
                               placeholder="HH" 
-                              className="w-16"
-                              value={timeFormat.endHour}
-                              onChange={(e) => handleTimeChange('endHour', e.target.value)}
+                              className="w-[80px]"
+                              value={endTime.hours}
+                              onChange={(e) => handleEndTimeChange('hours', e.target.value)}
                             />
-                          </div>
-                          <div>
-                            <Label htmlFor="endMinute">Min</Label>
+                            <Label htmlFor="endMinutes">Minutes</Label>
                             <Input 
-                              id="endMinute" 
+                              id="endMinutes" 
                               type="number" 
                               min="0" 
                               max="59" 
                               placeholder="MM" 
-                              className="w-16"
-                              value={timeFormat.endMinute}
-                              onChange={(e) => handleTimeChange('endMinute', e.target.value)}
+                              className="w-[80px]"
+                              value={endTime.minutes}
+                              onChange={(e) => handleEndTimeChange('minutes', e.target.value)}
                             />
                           </div>
-                          <div>
-                            <Label>Period</Label>
-                            <div className="flex mt-2">
-                              <Button 
-                                type="button"
-                                variant={timeFormat.endPeriod === "AM" ? "default" : "outline"}
-                                size="sm"
-                                className="rounded-r-none w-12"
-                                onClick={() => handleTimeChange('endPeriod', "AM")}
-                              >
-                                AM
-                              </Button>
-                              <Button 
-                                type="button"
-                                variant={timeFormat.endPeriod === "PM" ? "default" : "outline"}
-                                size="sm"
-                                className="rounded-l-none w-12"
-                                onClick={() => handleTimeChange('endPeriod', "PM")}
-                              >
-                                PM
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              {/* Timezone Selection */}
-              <div className="grid gap-2">
-                <Label>Timezone</Label>
-                <div className="flex items-center">
-                  <Globe className="mr-2 h-4 w-4 text-gray-500" />
-                  <Select value={timezone} onValueChange={setTimezone}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select timezone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timezones.map((tz) => (
-                        <SelectItem key={tz} value={tz}>{tz}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-
 
               <div className="grid gap-2">
                 <Label htmlFor="eventDescription">Event Description</Label>
