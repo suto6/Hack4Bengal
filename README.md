@@ -1,15 +1,13 @@
-# Whatzevent
+# Whatsevent
 
-A complete, functional, smooth-working LLM-powered chatbot application that allows event organizers to create events and attendees to ask questions about those events.
-
+✨ Whatsevent — Your Smart Assistant for Every Event.
 🏆 Built in Hack4Bengal(Online).
 
 ---
 
 ## 🚀 Features
 
-- Event organizers can input event information as plain text
-- The system stores event information in a SQLite database
+- Event organizers can input event information 
 - Each event gets a unique chatbot link
 - Attendees can ask questions about the event through a web-based chat interface
 - The chatbot provides specific, relevant answers based on the event information
