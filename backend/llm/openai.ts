@@ -51,6 +51,13 @@ User Question: ${question}
 7. For questions about travel, accommodation, certificates, goodies, or any other specific details, check if this information is mentioned in the context and respond accordingly
 8. Always provide specific answers from the event information, not generic responses
 9. If asked about something not mentioned in the context, clearly state that this information was not provided by the organizer
+10. Pay special attention to sections like "Parking Information", "Venue Address", "Accommodation Information", etc. when answering related questions
+11. For questions about parking, look specifically at the "Parking Information" section if available
+12. For questions about food, look specifically at the "Food & Refreshments" section if available
+13. For questions about certificates, look specifically at the "Certificates & Rewards" section if available
+14. For questions about registration, look specifically at the "Registration Information" section if available
+15. If there is a "Frequently Asked Questions" section, check there first for answers to common questions
+16. If the user's question is similar to one in the FAQs, use that answer but feel free to elaborate slightly if needed
 
 ### Your response (be specific, relevant, and conversational):
 `;
@@ -85,9 +92,9 @@ const generateMockResponse = (context: string, question: string): string => {
 
   // Extract key information from context
   const timeMatch = context.match(/\b\d{1,2}[:.:]\d{2}\b/);
-  const dateMatch = context.match(/\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}\b/);
+  const dateMatch = context.match(/\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}\b/) || context.match(/\b\d{4}-\d{2}-\d{2}\b/);
   const locationMatch = context.match(/(?:at|in)\s+([^.,]+)/);
-  const organizerMatch = context.match(/organized by\s+([^.,]+)/);
+  const organizerMatch = context.match(/Organizer:\s*([^\n]+)/) || context.match(/organized by\s+([^.,]+)/);
 
   // Check for travel and accommodation
   const hasTravelInfo = context.toLowerCase().includes('travel') || context.toLowerCase().includes('transport');
@@ -97,7 +104,16 @@ const generateMockResponse = (context: string, question: string): string => {
 
   // Check for common questions and provide canned responses
   if (lowerQuestion.includes('when') || lowerQuestion.includes('time') || lowerQuestion.includes('date')) {
-    if (timeMatch && dateMatch) {
+    // Look for date/time in the context directly
+    const dateTimeLines = context.split('\n').filter(line =>
+      line.toLowerCase().includes('date') ||
+      line.toLowerCase().includes('time') ||
+      line.toLowerCase().includes('when')
+    );
+
+    if (dateTimeLines.length > 0) {
+      return `${dateTimeLines[0].trim()}. Please make sure to arrive on time as the program will start promptly.`;
+    } else if (timeMatch && dateMatch) {
       return `The event is scheduled for ${dateMatch[0]} at ${timeMatch[0]}. Please make sure to arrive on time as the program will start promptly.`;
     } else if (timeMatch) {
       return `The event starts at ${timeMatch[0]}. I don't have the specific date information in my records.`;
@@ -197,6 +213,32 @@ const generateMockResponse = (context: string, question: string): string => {
       }
     }
     return `I don't see any specific information about goodies or swag in the event details. The organizer hasn't mentioned whether these will be provided.`;
+  }
+
+  // Check for FAQs that might match the question
+  if (context.includes('Frequently Asked Questions') || context.includes('FAQs')) {
+    // Extract FAQs from the context
+    const faqSection = context.split('Frequently Asked Questions:')[1];
+    if (faqSection) {
+      const faqPairs = faqSection.split('Q:').slice(1);
+      for (const faqPair of faqPairs) {
+        const question = faqPair.split('A:')[0].trim().toLowerCase();
+        const answer = faqPair.split('A:')[1]?.split('\n\n')[0].trim();
+
+        // Check if the user's question is similar to this FAQ
+        const questionWords = lowerQuestion.split(' ');
+        const faqWords = question.split(' ');
+
+        // Count matching words
+        const matchingWords = questionWords.filter(word =>
+          faqWords.some(faqWord => faqWord.includes(word) || word.includes(faqWord))
+        );
+
+        if (matchingWords.length >= 2 && answer) {
+          return `${answer}`;
+        }
+      }
+    }
   }
 
   // For any other question, try to find relevant information in the context

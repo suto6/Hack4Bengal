@@ -14,13 +14,30 @@ const apiClient = axios.create({
   },
 });
 
+// Interface for FAQ
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
+// Interface for FAQ
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
 // Interface for event data
 export interface EventData {
   name: string;
   organizer: string;
   details: string;
-  time: string;
-  whatsappNumber: string; // Used as contactNumber in the backend
+  startTime?: string;
+  endTime?: string;
+  date?: string;
+  time?: string; // Legacy field
+  contactNumber?: string;
+  whatsappNumber?: string; // Legacy field
+  faqs?: FAQ[];
 }
 
 // Interface for event response
@@ -81,8 +98,28 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
 
       console.log('Using mock event data for development');
 
+      // Format time string
+      const timeString = eventData.date ?
+        `${eventData.date}${eventData.startTime ? ` at ${eventData.startTime}` : ''}${eventData.endTime ? ` to ${eventData.endTime}` : ''}` :
+        (eventData.time || 'Date to be announced');
+
       // Create an enhanced context with additional information for better chat responses
-      const enhancedContext = `${eventData.details}\n\nThe event is organized by ${eventData.organizer} and will take place on ${eventData.time}.\n\nCertificates will be provided to all participants who attend the full event. There will be some goodies and swag for early registrants.`;
+      const enhancedContext = `${eventData.details}\n\nThe event is organized by ${eventData.organizer} and will take place on ${timeString}.\n\nCertificates will be provided to all participants who attend the full event. There will be some goodies and swag for early registrants.`;
+
+      // Process FAQs if provided
+      let faqsSection = '';
+      if (eventData.faqs && eventData.faqs.length > 0) {
+        faqsSection = '\n\nFrequently Asked Questions:\n';
+        eventData.faqs.forEach(faq => {
+          faqsSection += `\nQ: ${faq.question}\nA: ${faq.answer}\n`;
+        });
+      }
+
+      // Add FAQs to context if available
+      const fullContext = faqsSection ? enhancedContext + faqsSection : enhancedContext;
+
+      // Use contactNumber if provided, otherwise use a default
+      const contactNum = eventData.contactNumber || eventData.whatsappNumber || '0000000000';
 
       // Store the event data in localStorage for the chat page to use
       localStorage.setItem('eventData', JSON.stringify({
@@ -90,12 +127,12 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
         name: eventData.name,
         organizer: eventData.organizer,
         details: eventData.details,
-        time: eventData.time,
-        contactNumber: eventData.whatsappNumber,
+        time: timeString,
+        contactNumber: contactNum,
         chatLink: chatLink,
-        whatsappNumber: eventData.whatsappNumber,
+        whatsappNumber: contactNum,
         whatsappMessage: chatLink,
-        context: enhancedContext,
+        context: fullContext,
       }));
 
       return {
@@ -106,12 +143,12 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
           name: eventData.name,
           organizer: eventData.organizer,
           details: eventData.details,
-          time: eventData.time,
-          contactNumber: eventData.whatsappNumber,
+          time: timeString,
+          contactNumber: contactNum,
           chatLink: chatLink,
-          whatsappNumber: eventData.whatsappNumber,
+          whatsappNumber: contactNum,
           whatsappMessage: chatLink,
-          context: enhancedContext,
+          context: fullContext,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -175,8 +212,28 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
 
         console.log('Network error, using mock data');
 
+        // Format time string
+        const timeString = eventData.date ?
+          `${eventData.date}${eventData.startTime ? ` at ${eventData.startTime}` : ''}${eventData.endTime ? ` to ${eventData.endTime}` : ''}` :
+          (eventData.time || 'Date to be announced');
+
         // Create an enhanced context with additional information for better chat responses
-        const enhancedContext = `${eventData.details}\n\nThe event is organized by ${eventData.organizer} and will take place on ${eventData.time}.\n\nCertificates will be provided to all participants who attend the full event. There will be some goodies and swag for early registrants.`;
+        const enhancedContext = `${eventData.details}\n\nThe event is organized by ${eventData.organizer} and will take place on ${timeString}.\n\nCertificates will be provided to all participants who attend the full event. There will be some goodies and swag for early registrants.`;
+
+        // Process FAQs if provided
+        let faqsSection = '';
+        if (eventData.faqs && eventData.faqs.length > 0) {
+          faqsSection = '\n\nFrequently Asked Questions:\n';
+          eventData.faqs.forEach(faq => {
+            faqsSection += `\nQ: ${faq.question}\nA: ${faq.answer}\n`;
+          });
+        }
+
+        // Add FAQs to context if available
+        const fullContext = faqsSection ? enhancedContext + faqsSection : enhancedContext;
+
+        // Use contactNumber if provided, otherwise use a default
+        const contactNum = eventData.contactNumber || eventData.whatsappNumber || '0000000000';
 
         // Store the event data in localStorage for the chat page to use
         localStorage.setItem('eventData', JSON.stringify({
@@ -184,12 +241,12 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
           name: eventData.name,
           organizer: eventData.organizer,
           details: eventData.details,
-          time: eventData.time,
-          contactNumber: eventData.whatsappNumber,
+          time: timeString,
+          contactNumber: contactNum,
           chatLink: chatLink,
-          whatsappNumber: eventData.whatsappNumber,
+          whatsappNumber: contactNum,
           whatsappMessage: chatLink,
-          context: enhancedContext,
+          context: fullContext,
         }));
 
         return {
@@ -200,12 +257,12 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
             name: eventData.name,
             organizer: eventData.organizer,
             details: eventData.details,
-            time: eventData.time,
-            contactNumber: eventData.whatsappNumber,
+            time: timeString,
+            contactNumber: contactNum,
             chatLink: chatLink,
-            whatsappNumber: eventData.whatsappNumber,
+            whatsappNumber: contactNum,
             whatsappMessage: chatLink,
-            context: enhancedContext,
+            context: fullContext,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }

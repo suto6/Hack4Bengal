@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Event" ADD COLUMN "date" TEXT;
+ALTER TABLE "Event" ADD COLUMN "endTime" TEXT;
+ALTER TABLE "Event" ADD COLUMN "faqs" TEXT;
+ALTER TABLE "Event" ADD COLUMN "startTime" TEXT;

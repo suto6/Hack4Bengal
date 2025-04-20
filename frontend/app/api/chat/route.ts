@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Sending chat message to backend:', { eventId, message: message.substring(0, 50) + (message.length > 50 ? '...' : '') });
 
-    // Try to make the direct API request to the backend
+    // We'll use the backend API for all events, including mock events
+    console.log('Sending request to backend API');
+
+    // For real events, try to make the direct API request to the backend
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
@@ -81,7 +84,27 @@ export async function POST(request: NextRequest) {
           const hasCertificateInfo = context.toLowerCase().includes('certificate');
           const hasGoodiesInfo = context.toLowerCase().includes('goodies') || context.toLowerCase().includes('swag');
 
-          if (question.includes('when') || question.includes('time') || question.includes('date')) {
+          // Check if there are FAQs in the context
+          const hasFaqs = context.toLowerCase().includes('frequently asked questions') || context.toLowerCase().includes('faqs');
+
+          // Try to find a matching FAQ
+          let faqAnswer = null;
+          if (hasFaqs) {
+            const faqSection = context.substring(context.toLowerCase().indexOf('frequently asked questions'));
+            const faqRegex = new RegExp(`Q:\s*([^\n]*${message.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^\n]*)\s*\n\s*A:\s*([^\n]*)`, 'i');
+            const faqMatch = faqSection.match(faqRegex);
+
+            if (faqMatch && faqMatch[2]) {
+              faqAnswer = faqMatch[2].trim();
+            }
+          }
+
+          // If we found a matching FAQ, use that answer
+          if (faqAnswer) {
+            response = faqAnswer;
+          }
+          // Otherwise, use the fallback logic
+          else if (question.includes('when') || question.includes('time') || question.includes('date')) {
             if (timeMatch && dateMatch) {
               response = `The event is scheduled for ${dateMatch[0]} at ${timeMatch[0]}.`;
             } else {
@@ -112,8 +135,13 @@ export async function POST(request: NextRequest) {
               ? `Accommodation information is available in the event details.`
               : `Please contact the organizer about accommodation.`;
           } else {
-            // Generic response for other questions
-            response = `For more details about "${message}", please check the event information or contact the organizer.`;
+            // Check if we have FAQs but couldn't find an exact match
+            if (hasFaqs) {
+              response = `I don't have specific information about "${message}". Please check the FAQs section in the event details or contact the organizer.`;
+            } else {
+              // Generic response for other questions
+              response = `For more details about "${message}", please check the event information or contact the organizer.`;
+            }
           }
 
           return NextResponse.json({ response });

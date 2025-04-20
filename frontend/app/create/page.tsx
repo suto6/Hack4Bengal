@@ -45,6 +45,12 @@ export default function CreateEventPage() {
   const [organizerPhone, setOrganizerPhone] = useState<string>('')
   const [eventDescription, setEventDescription] = useState<string>('')
   const [eventFaqs, setEventFaqs] = useState<string>('')
+  const [venueAddress, setVenueAddress] = useState<string>('')
+  const [parkingInfo, setParkingInfo] = useState<string>('')
+  const [accommodationInfo, setAccommodationInfo] = useState<string>('')
+  const [foodInfo, setFoodInfo] = useState<string>('')
+  const [certificateInfo, setCertificateInfo] = useState<string>('')
+  const [registrationInfo, setRegistrationInfo] = useState<string>('')
 
   const handleTimeChange = (field: keyof typeof timeFormat, value: string | "AM" | "PM") => {
     setTimeFormat(prev => ({ ...prev, [field]: value }))
@@ -99,7 +105,36 @@ export default function CreateEventPage() {
         timeString = 'Date to be announced'
       }
 
-      const fullContext = `${eventDescription}\n\n${eventFaqs ? 'FAQs:\n' + eventFaqs : ''}`
+      // Build a comprehensive context with all the event information
+      let fullContext = `${eventDescription}`
+
+      if (venueAddress) {
+        fullContext += `\n\nVenue Address:\n${venueAddress}`
+      }
+
+      if (parkingInfo) {
+        fullContext += `\n\nParking Information:\n${parkingInfo}`
+      }
+
+      if (accommodationInfo) {
+        fullContext += `\n\nAccommodation Information:\n${accommodationInfo}`
+      }
+
+      if (foodInfo) {
+        fullContext += `\n\nFood & Refreshments:\n${foodInfo}`
+      }
+
+      if (certificateInfo) {
+        fullContext += `\n\nCertificates & Rewards:\n${certificateInfo}`
+      }
+
+      if (registrationInfo) {
+        fullContext += `\n\nRegistration Information:\n${registrationInfo}`
+      }
+
+      if (eventFaqs) {
+        fullContext += `\n\nFAQs:\n${eventFaqs}`
+      }
 
       const eventData: EventData = {
         name: eventName,
@@ -403,6 +438,90 @@ export default function CreateEventPage() {
                 <p className="text-xs text-muted-foreground">
                   Include all important details about your event such as venue, schedule, speakers, etc.
                   This information will be used by the AI to answer attendee questions.
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="venueAddress">Venue Address</Label>
+                <Textarea
+                  id="venueAddress"
+                  placeholder="Enter the full address of the venue..."
+                  className="min-h-[80px]"
+                  value={venueAddress}
+                  onChange={(e) => setVenueAddress(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Provide the complete address including building name, street, city, and postal code.
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="parkingInfo">Parking Information</Label>
+                <Textarea
+                  id="parkingInfo"
+                  placeholder="Enter details about parking availability, costs, etc..."
+                  className="min-h-[80px]"
+                  value={parkingInfo}
+                  onChange={(e) => setParkingInfo(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Include information about parking options, costs, and any special arrangements.
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="accommodationInfo">Accommodation Information</Label>
+                <Textarea
+                  id="accommodationInfo"
+                  placeholder="Enter details about nearby hotels, special rates, etc..."
+                  className="min-h-[80px]"
+                  value={accommodationInfo}
+                  onChange={(e) => setAccommodationInfo(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Provide information about recommended hotels, special rates, or accommodation arrangements.
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="foodInfo">Food & Refreshments</Label>
+                <Textarea
+                  id="foodInfo"
+                  placeholder="Enter details about meals, refreshments, dietary options, etc..."
+                  className="min-h-[80px]"
+                  value={foodInfo}
+                  onChange={(e) => setFoodInfo(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Describe what food and drinks will be provided, meal times, and dietary accommodations.
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="certificateInfo">Certificates & Rewards</Label>
+                <Textarea
+                  id="certificateInfo"
+                  placeholder="Enter details about certificates, prizes, rewards, etc..."
+                  className="min-h-[80px]"
+                  value={certificateInfo}
+                  onChange={(e) => setCertificateInfo(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Specify if certificates will be provided, any prizes or rewards, and eligibility criteria.
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="registrationInfo">Registration Information</Label>
+                <Textarea
+                  id="registrationInfo"
+                  placeholder="Enter details about registration process, deadlines, fees, etc..."
+                  className="min-h-[80px]"
+                  value={registrationInfo}
+                  onChange={(e) => setRegistrationInfo(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Include registration deadlines, fees, process, and any special requirements.
                 </p>
               </div>
 
