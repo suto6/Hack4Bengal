@@ -1,4 +1,4 @@
-# 🚀 WhatsEvent - AI-Powered Event Assistant
+#  WhatsEvent - AI-Powered Event Assistant
 
 
 **Let your event answer its own questions!** WhatsEvent is an AI chatbot that automatically handles attendee queries about your event, saving organizers hours of repetitive communication.
@@ -31,3 +31,18 @@ npm install
 cp .env.example .env  # Add your credentials
 npm run dev
 ```
+## 🤖 Tech Stack
+
+**Frontend**  
+- Next.js 14  
+- TypeScript  
+- Tailwind CSS  
+- shadcn/ui  
+
+**AI & Backend**  
+- OpenAI API  
+- Next.js API Routes  
+
+**Data**  
+- SQLite  
+- prisma  
