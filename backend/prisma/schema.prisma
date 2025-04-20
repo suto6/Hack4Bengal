@@ -15,13 +15,17 @@ model Event {
   id              String   @id @default(uuid())
   name            String
   organizer       String
-  details         String
-  time            String
-  contactNumber   String  // Contact number for the event organizer
-  chatLink        String  // Web chat link for the event
+  details         String   // Additional information about the event
+  startTime       String?  // Start time of the event
+  endTime         String?  // End time of the event
+  date            String?  // Date of the event
+  time            String   // Legacy time field (kept for backward compatibility)
+  contactNumber   String   // Contact number for the event organizer
+  chatLink        String   // Web chat link for the event
   // Legacy fields kept for backward compatibility
-  whatsappNumber  String  @map("whatsappNumber")
-  whatsappMessage String  @map("whatsappMessage")
+  whatsappNumber  String   @map("whatsappNumber")
+  whatsappMessage String   @map("whatsappMessage")
+  faqs            String?  // JSON string of FAQs (array of question-answer pairs)
   context         String?  // Optional field for event context (used by the chatbot) - SQLite will handle large text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

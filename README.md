@@ -1,7 +1,6 @@
-HEAD
-# 🎫 MessageMyTicket - WhatsApp-Based Event Ticketing System
+# LLM Event Assistant
 
-**MessageMyTicket** is an easy-to-use, WhatsApp-based ticketing and registration bot that helps event organizers streamline user registrations, generate unique QR-code-based tickets, and manage attendance—all through a friendly chatbot interface.
+A complete, functional, smooth-working LLM-powered chatbot application that allows event organizers to create events and attendees to ask questions about those events.
 
 🏆 Built in Hack4Bengal(Online).
 
@@ -9,29 +8,25 @@ HEAD
 
 ## 🚀 Features
 
-- Register for events via WhatsApp
-- Automatically generate unique tickets with QR codes
-- Verify tickets at the event gate by scanning
-- Real-time database and attendance tracking
-- Admin dashboard (coming soon)
-
-# WhatsApp LLM Event Assistant
-
-A smart event assistant chatbot that allows organizers to upload event details (including PDFs), and attendees to ask questions on WhatsApp. The bot answers using OpenAI based on the uploaded event context.
+- Event organizers can input event information as plain text
+- The system stores event information in a SQLite database
+- Each event gets a unique chatbot link
+- Attendees can ask questions about the event through a web-based chat interface
+- The chatbot provides specific, relevant answers based on the event information
+- Powered by OpenAI's GPT models
 
 ## Project Structure
 
-- **Backend**: Express.js API with MongoDB, OpenAI, and Twilio integration
+- **Backend**: Express.js API with SQLite (Prisma), OpenAI integration
 - **Frontend**: Next.js application with Tailwind CSS
 
 ## Setup
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- MongoDB (local or Atlas)
+- Node.js (v16 or higher)
+- npm (v7 or higher)
 - OpenAI API key
-- Twilio account with WhatsApp Sandbox
 
 ### Backend Setup
 
@@ -48,11 +43,8 @@ A smart event assistant chatbot that allows organizers to upload event details (
 3. Create a `.env` file with the following variables:
    ```
    PORT=5000
-   MONGO_URI=mongodb://localhost:27017/eventAssistant
-   OPENAI_API_KEY=your-openai-api-key
-   TWILIO_ACCOUNT_SID=your-twilio-sid
-   TWILIO_AUTH_TOKEN=your-twilio-auth-token
-   TWILIO_PHONE_NUMBER=your-twilio-phone-number
+   DATABASE_URL="file:./dev.db"
+   OPENAI_API_KEY=your_openai_api_key_here
    ```
 
 4. Start the backend server:
@@ -72,7 +64,13 @@ A smart event assistant chatbot that allows organizers to upload event details (
    npm install
    ```
 
-3. Start the frontend server:
+3. Create a `.env.local` file with the following variables:
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:5000/api
+   BACKEND_URL=http://localhost:5000
+   ```
+
+4. Start the frontend server:
    ```
    npm run dev
    ```
@@ -98,7 +96,7 @@ A smart event assistant chatbot that allows organizers to upload event details (
 4. Access the application:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:5000
-   
+
 ## Troubleshooting
 
 ### Hydration Errors
@@ -116,20 +114,17 @@ These are handled by:
 
 ## How It Works
 
-1. **Create Event**: Organizers create an event with details and optionally upload a PDF
-2. **Share Link**: The system generates a WhatsApp link that attendees can use
-3. **Ask Questions**: Attendees send questions via WhatsApp
+1. **Create Event**: Organizers create an event with details as plain text
+2. **Share Link**: The system generates a unique chat link that attendees can use
+3. **Ask Questions**: Attendees ask questions through the web-based chat interface
 4. **Get Answers**: The system uses OpenAI to generate answers based on the event context
 
 ## Technologies Used
 
 - **Backend**:
   - Express.js
-  - MongoDB
+  - SQLite with Prisma
   - OpenAI API
-  - Twilio API
-  - Multer (file uploads)
-  - pdf-parse (PDF text extraction)
 
 - **Frontend**:
   - Next.js
@@ -142,11 +137,22 @@ These are handled by:
 ### Event Management
 
 - **Create Event**: `POST /api/event/create`
-- **Upload PDF**: `POST /api/event/upload-pdf/:eventId`
-- **Create with PDF**: `POST /api/event/create-with-pdf`
+- **Get Event**: `GET /api/event/:eventId`
+- **Get All Events**: `GET /api/event`
 
-### WhatsApp Integration
+### Chat Integration
 
-- **Webhook**: `POST /api/whatsapp/webhook`
-- **Send Message**: `POST /api/whatsapp/send`
-372c81c (mongodb remove hobe)
+- **Send Message**: `POST /api/chat`
+
+## LLM Integration
+
+The LLM receives this structured prompt for every user message:
+
+```
+You are an event assistant. Based on the following event information, answer the user's question:
+
+Event Info: [event data from the organizer]
+User Question: [the actual question asked]
+```
+
+The LLM then provides a fluent, helpful answer based on the event information.

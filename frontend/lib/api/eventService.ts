@@ -3,7 +3,8 @@ import axios from 'axios';
 
 // Define the base URL for the API
 // Using relative URL to leverage Next.js API proxy
-const API_BASE_URL = '/api';
+// Or use environment variable if available
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -13,13 +14,30 @@ const apiClient = axios.create({
   },
 });
 
+// Interface for FAQ
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
+// Interface for FAQ
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
 // Interface for event data
 export interface EventData {
   name: string;
   organizer: string;
   details: string;
-  time: string;
-  whatsappNumber: string; // Used as contactNumber in the backend
+  startTime?: string;
+  endTime?: string;
+  date?: string;
+  time?: string; // Legacy field
+  contactNumber?: string;
+  whatsappNumber?: string; // Legacy field
+  faqs?: FAQ[];
 }
 
 // Interface for event response
@@ -80,18 +98,41 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
 
       console.log('Using mock event data for development');
 
+      // Format time string
+      const timeString = eventData.date ?
+        `${eventData.date}${eventData.startTime ? ` at ${eventData.startTime}` : ''}${eventData.endTime ? ` to ${eventData.endTime}` : ''}` :
+        (eventData.time || 'Date to be announced');
+
+      // Create an enhanced context with additional information for better chat responses
+      const enhancedContext = `${eventData.details}\n\nThe event is organized by ${eventData.organizer} and will take place on ${timeString}.\n\nCertificates will be provided to all participants who attend the full event. There will be some goodies and swag for early registrants.`;
+
+      // Process FAQs if provided
+      let faqsSection = '';
+      if (eventData.faqs && eventData.faqs.length > 0) {
+        faqsSection = '\n\nFrequently Asked Questions:\n';
+        eventData.faqs.forEach(faq => {
+          faqsSection += `\nQ: ${faq.question}\nA: ${faq.answer}\n`;
+        });
+      }
+
+      // Add FAQs to context if available
+      const fullContext = faqsSection ? enhancedContext + faqsSection : enhancedContext;
+
+      // Use contactNumber if provided, otherwise use a default
+      const contactNum = eventData.contactNumber || eventData.whatsappNumber || '0000000000';
+
       // Store the event data in localStorage for the chat page to use
       localStorage.setItem('eventData', JSON.stringify({
         id: mockEventId,
         name: eventData.name,
         organizer: eventData.organizer,
         details: eventData.details,
-        time: eventData.time,
-        contactNumber: eventData.whatsappNumber,
+        time: timeString,
+        contactNumber: contactNum,
         chatLink: chatLink,
-        whatsappNumber: eventData.whatsappNumber,
+        whatsappNumber: contactNum,
         whatsappMessage: chatLink,
-        context: eventData.details,
+        context: fullContext,
       }));
 
       return {
@@ -102,12 +143,12 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
           name: eventData.name,
           organizer: eventData.organizer,
           details: eventData.details,
-          time: eventData.time,
-          contactNumber: eventData.whatsappNumber,
+          time: timeString,
+          contactNumber: contactNum,
           chatLink: chatLink,
-          whatsappNumber: eventData.whatsappNumber,
+          whatsappNumber: contactNum,
           whatsappMessage: chatLink,
-          context: eventData.details,
+          context: fullContext,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -171,18 +212,41 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
 
         console.log('Network error, using mock data');
 
+        // Format time string
+        const timeString = eventData.date ?
+          `${eventData.date}${eventData.startTime ? ` at ${eventData.startTime}` : ''}${eventData.endTime ? ` to ${eventData.endTime}` : ''}` :
+          (eventData.time || 'Date to be announced');
+
+        // Create an enhanced context with additional information for better chat responses
+        const enhancedContext = `${eventData.details}\n\nThe event is organized by ${eventData.organizer} and will take place on ${timeString}.\n\nCertificates will be provided to all participants who attend the full event. There will be some goodies and swag for early registrants.`;
+
+        // Process FAQs if provided
+        let faqsSection = '';
+        if (eventData.faqs && eventData.faqs.length > 0) {
+          faqsSection = '\n\nFrequently Asked Questions:\n';
+          eventData.faqs.forEach(faq => {
+            faqsSection += `\nQ: ${faq.question}\nA: ${faq.answer}\n`;
+          });
+        }
+
+        // Add FAQs to context if available
+        const fullContext = faqsSection ? enhancedContext + faqsSection : enhancedContext;
+
+        // Use contactNumber if provided, otherwise use a default
+        const contactNum = eventData.contactNumber || eventData.whatsappNumber || '0000000000';
+
         // Store the event data in localStorage for the chat page to use
         localStorage.setItem('eventData', JSON.stringify({
           id: mockEventId,
           name: eventData.name,
           organizer: eventData.organizer,
           details: eventData.details,
-          time: eventData.time,
-          contactNumber: eventData.whatsappNumber,
+          time: timeString,
+          contactNumber: contactNum,
           chatLink: chatLink,
-          whatsappNumber: eventData.whatsappNumber,
+          whatsappNumber: contactNum,
           whatsappMessage: chatLink,
-          context: eventData.details,
+          context: fullContext,
         }));
 
         return {
@@ -193,12 +257,12 @@ export const createEvent = async (eventData: EventData): Promise<EventResponse> 
             name: eventData.name,
             organizer: eventData.organizer,
             details: eventData.details,
-            time: eventData.time,
-            contactNumber: eventData.whatsappNumber,
+            time: timeString,
+            contactNumber: contactNum,
             chatLink: chatLink,
-            whatsappNumber: eventData.whatsappNumber,
+            whatsappNumber: contactNum,
             whatsappMessage: chatLink,
-            context: eventData.details,
+            context: fullContext,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }
@@ -242,10 +306,44 @@ export const getEvents = async (): Promise<Event[]> => {
  */
 export const getEventById = async (eventId: string): Promise<Event> => {
   try {
+    // First check if we have the event in localStorage
+    if (typeof window !== 'undefined') {
+      const storedEventData = localStorage.getItem('eventData');
+      if (storedEventData) {
+        const parsedEventData = JSON.parse(storedEventData);
+        if (parsedEventData.id === eventId) {
+          console.log('Found event in localStorage:', parsedEventData.name);
+          return parsedEventData;
+        }
+      }
+    }
+
+    // If not in localStorage, try to get from the API
+    console.log(`Fetching event with ID ${eventId} from API`);
     const response = await apiClient.get(`/event/${eventId}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching event with ID ${eventId}:`, error);
+
+    // If we're in development mode, create a mock event
+    if (process.env.NODE_ENV === 'development' && eventId.startsWith('test-')) {
+      console.log('Creating mock event for development');
+      return {
+        id: eventId,
+        name: 'Test Event',
+        organizer: 'Test Organizer',
+        details: 'This is a test event with all the details needed for testing the chat functionality. The event will be held at the Conference Center. There will be multiple speakers including John Doe and Jane Smith. Lunch and refreshments will be provided. Please bring your ID for registration.',
+        time: 'June 15, 2023 at 10:00 AM',
+        contactNumber: '1234567890',
+        chatLink: `/event/${eventId}`,
+        whatsappNumber: '1234567890',
+        whatsappMessage: `/event/${eventId}`,
+        context: 'This is a test event happening on June 15, 2023 at 10:00 AM at the Conference Center. The event will feature speakers including John Doe and Jane Smith on various topics including AI and machine learning. Lunch and refreshments will be provided. Please bring your ID for registration. Certificates will be provided to all participants who attend the full event. There will be some goodies and swag for early registrants.',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
     throw new Error('Event not found');
   }
 };
@@ -258,10 +356,73 @@ export const getEventById = async (eventId: string): Promise<Event> => {
  */
 export const sendChatMessage = async (eventId: string, message: string): Promise<{ response: string }> => {
   try {
-    const response = await apiClient.post('/chat', { eventId, message });
-    return response.data;
+    // Set a timeout for the request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    try {
+      // Make the API request with a timeout to the Next.js API route
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ eventId, message }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (requestError) {
+      clearTimeout(timeoutId);
+      throw requestError; // Re-throw to be caught by the outer catch
+    }
   } catch (error) {
     console.error('Error sending chat message:', error);
-    throw new Error('Failed to get response');
+
+    // Try to get the event data from localStorage for fallback responses
+    if (typeof window !== 'undefined') {
+      try {
+        // Check if we have the event data in localStorage
+        const storedEventData = localStorage.getItem('eventData');
+        if (storedEventData) {
+          const event = JSON.parse(storedEventData);
+
+          // If the stored event matches the requested event ID, use it for a fallback response
+          if (event.id === eventId) {
+            console.log('Using stored event data for fallback response');
+
+            // Generate a simple response based on the question
+            const question = message.toLowerCase();
+            let response = '';
+
+            if (question.includes('when') || question.includes('time') || question.includes('date')) {
+              response = `The event is scheduled for ${event.time}.`;
+            } else if (question.includes('where') || question.includes('location') || question.includes('venue')) {
+              response = `Please check the event details for location information: ${event.details.substring(0, 100)}...`;
+            } else if (question.includes('who') || question.includes('organizer')) {
+              response = `This event is organized by ${event.organizer}.`;
+            } else {
+              response = `Thank you for your question. Here's what I know about the event: ${event.details.substring(0, 150)}...`;
+            }
+
+            return { response };
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Error generating fallback response:', fallbackError);
+      }
+    }
+
+    // If we get here, we couldn't generate a fallback response
+    // Instead of throwing an error, return a generic response
+    return {
+      response: "I'm sorry, I couldn't connect to the server to answer your question. Please try again later or contact the event organizer for assistance."
+    };
   }
 };

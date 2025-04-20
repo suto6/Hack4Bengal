@@ -12,11 +12,11 @@ export default function LandingPage() {
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
             Welcome to <span className="text-primary">TicketzBot</span>
           </h1>
-          <p className="text-xl text-muted-foreground">Create event ticketing flows directly in WhatsApp</p>
+          <p className="text-xl text-muted-foreground">Create an AI-powered event assistant for your attendees</p>
           <div className="flex gap-4">
-            <Link href="/create">
+            <Link href="/simple-create">
               <Button size="lg" className="gap-2">
-                Enter New Event
+                Create New Event
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -52,8 +52,8 @@ export default function LandingPage() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <MessageSquare className="h-8 w-8 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold">Share WhatsApp Link</h3>
-            <p className="text-muted-foreground">Send the generated link to your attendees via any platform</p>
+            <h3 className="text-xl font-semibold">Share Chat Link</h3>
+            <p className="text-muted-foreground">Send the generated web chat link to your attendees</p>
           </div>
           <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">

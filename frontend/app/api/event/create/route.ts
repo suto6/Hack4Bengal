@@ -18,9 +18,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate required fields
-    const { name, organizer, details, time, whatsappNumber } = body;
-    if (!name || !organizer || !details || !time || !whatsappNumber) {
-      console.error('Missing required fields');
+    const { name, organizer, details } = body;
+    console.log('Received event data:', JSON.stringify(body));
+
+    if (!name || !organizer || !details) {
+      console.error('Missing required fields:', { name, organizer, details });
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -33,7 +35,14 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     try {
-      const response = await fetch('http://localhost:5000/api/event/create', {
+      // Use the main backend server
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+      console.log(`Connecting to backend at: ${backendUrl}/api/event/create`);
+
+      // Log the exact body being sent to the backend
+      console.log('Sending to backend:', JSON.stringify(body));
+
+      const response = await fetch(`${backendUrl}/api/event/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data);
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         console.error('Request to backend timed out');
         return NextResponse.json(
           { error: 'Request to backend timed out' },

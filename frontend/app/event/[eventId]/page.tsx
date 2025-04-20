@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Send } from "lucide-react"
-import { getEventById } from "@/lib/api/eventService"
+import { getEventById, Event } from "@/lib/api/eventService"
 
 // Message type definition
 type Message = {
@@ -19,7 +19,7 @@ type Message = {
 export default function EventChatPage() {
   const params = useParams()
   const eventId = params.eventId as string
-  const [event, setEvent] = useState<any>(null)
+  const [event, setEvent] = useState<Event | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
@@ -33,31 +33,10 @@ export default function EventChatPage() {
       try {
         setLoading(true)
 
-        // First try to get the event from the backend
-        try {
-          const eventData = await getEventById(eventId)
-          setEvent(eventData)
-          addWelcomeMessages(eventData.name)
-          return
-        } catch (backendError) {
-          console.log('Could not fetch from backend, trying localStorage:', backendError)
-        }
-
-        // If backend fails, try to get from localStorage
-        if (typeof window !== 'undefined') {
-          const storedEventData = localStorage.getItem('eventData')
-          if (storedEventData) {
-            const parsedEventData = JSON.parse(storedEventData)
-            if (parsedEventData.id === eventId) {
-              setEvent(parsedEventData)
-              addWelcomeMessages(parsedEventData.name)
-              return
-            }
-          }
-        }
-
-        // If we get here, we couldn't find the event
-        throw new Error('Event not found')
+        // Get the event data - getEventById now handles localStorage and mock events
+        const eventData = await getEventById(eventId)
+        setEvent(eventData)
+        addWelcomeMessages(eventData.name)
       } catch (err) {
         console.error("Error fetching event:", err)
         setError("Event not found or could not be loaded")
@@ -251,7 +230,7 @@ export default function EventChatPage() {
           </CardDescription>
           <div className="mt-2 text-sm">
             <p><strong>Contact:</strong> {event?.whatsappNumber}</p>
-            <p className="mt-1"><strong>Details:</strong> {event?.details.substring(0, 150)}{event?.details.length > 150 ? '...' : ''}</p>
+            <p className="mt-1"><strong>Details:</strong> {event?.details ? `${event.details.substring(0, 150)}${event.details.length > 150 ? '...' : ''}` : ''}</p>
           </div>
         </CardHeader>
 
@@ -292,7 +271,7 @@ export default function EventChatPage() {
               placeholder="Type your message..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               disabled={sending}
               className="flex-grow"
             />
